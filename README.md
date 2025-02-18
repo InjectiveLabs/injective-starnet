@@ -31,4 +31,5 @@ Starnet is designed to be used in a cloud environment, but can also be used on a
 - [ ] Refactor logic to provision sentry nodes
 - [ ] Write docs/README
 - [ ] Add GH Actions to deploy Starnet
-- [ ] Add GH Actions to destroy Starnet
+- [x] Add GH Actions to destroy Starnet
+- [ ] Impl Pulumi rollback logic, so we can destroy Starnet if something with binary goes wrong

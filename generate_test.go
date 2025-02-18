@@ -36,14 +36,14 @@ func TestGenerateNodesConfigs(t *testing.T) {
 		},
 		InjectiveConfig: InjectiveConfig{
 			Repository: "https://github.com/InjectiveLabs/injective-core",
-			Branch:     "main",
+			Branch:     "master",
 		},
 	}
 
 	nodes := Nodes{
 		Validators: []Node{
-			{Host: "validator-0", IP: "10.0.0.1"},
-			{Host: "validator-1", IP: "10.0.0.2"},
+			{Host: "starnet-validator-0", IP: "10.0.0.1"},
+			{Host: "starnet-validator-1", IP: "10.0.0.2"},
 		},
 		Sentries: []Node{
 			{Host: "sentry0", IP: "10.0.1.1"},
@@ -142,8 +142,8 @@ func TestPrepareInjectived(t *testing.T) {
 
 	nodes := Nodes{
 		Validators: []Node{
-			{Host: "validator-0", IP: "10.0.0.1"},
-			{Host: "validator-1", IP: "10.0.0.2"},
+			{Host: "starnet-validator-0", IP: "10.0.0.1"},
+			{Host: "starnet-validator-1", IP: "10.0.0.2"},
 		},
 		Sentries: []Node{
 			{Host: "sentry0", IP: "10.0.1.1"},

@@ -25,8 +25,6 @@ const (
 	INJECTIVE_REPO_PATH = "injective-core"
 	// Add path where injectived will be built
 	INJECTIVED_BINARY_PATH = INJECTIVE_REPO_PATH + "/build/injectived"
-	GOOS                   = "linux"
-	GOARCH                 = "amd64"
 )
 
 func generateNodesConfigs(cfg Config, nodes Nodes) error {
@@ -168,7 +166,7 @@ func prepareInjectived(cfg Config, nodes Nodes) error {
 	}
 
 	// Build binary
-	cmd = execCommand("env", "GOOS="+GOOS, "GOARCH="+GOARCH, "make", "-C", injectiveAbsPath, "install")
+	cmd = execCommand("make", "-C", injectiveAbsPath, "install")
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("error building injectived: %v", err)
 	}
@@ -184,6 +182,18 @@ func prepareInjectived(cfg Config, nodes Nodes) error {
 	}
 
 	binaryPath := filepath.Join(goPath, "bin", "injectived")
+	fmt.Println(binaryPath)
+	// Get libwasmvm.x86_64.so
+	wasmLibCmd := execCommand("ldd", binaryPath, "|", "grep", "libwasmvm.x86_64.so", "|", "awk", "{ print $3 }")
+	if err := wasmLibCmd.Run(); err != nil {
+		return fmt.Errorf("error pulling libwasmvm.x86_64.so from injectived: %v", err)
+	}
+
+	wasmvmLibPath, err := wasmLibCmd.Output()
+	if err != nil {
+		return fmt.Errorf("error getting wasmvmLibPath: %v", err)
+	}
+
 	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
 		return fmt.Errorf("binary not found at %s after make install", binaryPath)
 	}
@@ -193,6 +203,10 @@ func prepareInjectived(cfg Config, nodes Nodes) error {
 		validatorBinPath := filepath.Join(CHAIN_STRESSER_PATH, "validators", strconv.Itoa(i), "injectived")
 		if err := copyFile(binaryPath, validatorBinPath); err != nil {
 			return fmt.Errorf("error copying binary to validator %d: %v", i, err)
+		}
+		// Copy wasmvmLib
+		if err := copyFile(string(wasmvmLibPath), filepath.Join(CHAIN_STRESSER_PATH, "validators", strconv.Itoa(i), "libwasmvm.x86_64.so")); err != nil {
+			return fmt.Errorf("error copying wasmvmLib to validator %d: %v", i, err)
 		}
 	}
 
