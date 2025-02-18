@@ -1,4 +1,4 @@
-name: Pulumi Starnet Deployment
+name: Provision the network
 on:
    workflow_dispatch:
     inputs:
@@ -8,7 +8,7 @@ on:
         type: number
 jobs:
   deploy:
-    name: Deploy
+    name: Provision
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -26,6 +26,19 @@ jobs:
         with:
          project_id: injective-core
       - run: go mod download
+      # Setup chain-stresser
+      - name: Checkout chain-stresser
+        uses: actions/checkout@master
+        with:
+          repository: InjectiveLabs/chain-stresser
+          token: ${{ secrets.GH_TOKEN }}
+          path: ./chain-stresser
+          fetch-depth: 0
+      - name: Build chain-stresser
+        run: male install
+        env:
+          GOARCH: amd64
+          GOOS: linux
       - uses: pulumi/actions@v6
         with:
           command: up

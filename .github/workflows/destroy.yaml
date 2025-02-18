@@ -1,9 +1,9 @@
-name: Pulumi Nukes Starnet 
+name: Nuke the network
 on:
    workflow_dispatch:
 jobs:
   deploy:
-    name: Destroy
+    name: Nuke
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
