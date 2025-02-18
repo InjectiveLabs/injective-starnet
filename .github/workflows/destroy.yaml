@@ -1,0 +1,29 @@
+name: Pulumi Nukes Starnet 
+on:
+   workflow_dispatch:
+jobs:
+  deploy:
+    name: Destroy
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.22.11'
+      - name: Configure GCP Credentials
+        uses: google-github-actions/auth@v2	
+        with:
+         credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+      - name: Set up gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+         project_id: injective-core
+      - run: go mod download
+      - uses: pulumi/actions@v6
+        with:
+          command: destroy
+          stack-name: InjectiveLabs/injective-starnet
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
