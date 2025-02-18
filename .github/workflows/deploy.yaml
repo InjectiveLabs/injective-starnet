@@ -23,7 +23,6 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
         with:
          project_id: injective-core
-      - run: go mod download
       # Setup chain-stresser
       - name: Checkout chain-stresser
         uses: actions/checkout@master
@@ -49,7 +48,7 @@ jobs:
         uses: pulumi/actions@v6
         with:
           command: up
-          work-dir: ./injective-starnet
           stack-name: InjectiveLabs/injective-starnet/starnet
+          work-dir: ./injective-starnet
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
