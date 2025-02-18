@@ -11,12 +11,14 @@ jobs:
     name: Provision
     runs-on: ubuntu-22.04
     steps:
+      - name: Install CA Certificates
+        run: apt update && apt install -y ca-certificates
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@master
       - name: Setup Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v5
         with:
-          go-version: '1.22.11'
+          go-version: '1.22'
       - name: Configure GCP Credentials
         uses: google-github-actions/auth@v2	
         with:
@@ -37,12 +39,18 @@ jobs:
       - name: Build chain-stresser
         run: |
           cd chain-stresser
-          go mod tidy
           make install
         env:
           GOARCH: amd64
           GOOS: linux
-      - uses: pulumi/actions@v6
+      - name: Checkout starnet
+        uses: actions/checkout@master
+        with:
+         repository: InjectiveLabs/injective-starnet
+         token: ${{ secrets.GH_TOKEN }}
+         path: ./injective-starnet
+      - name: Pulumi up
+        uses: pulumi/actions@v6
         with:
           command: up
           stack-name: InjectiveLabs/injective-starnet/starnet
