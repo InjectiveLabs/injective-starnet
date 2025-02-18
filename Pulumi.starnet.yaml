@@ -1,0 +1,70 @@
+config:
+  gcp:project: injective-core
+  starnet:nodePools:
+    ### Validators ###
+    - nodePoolName: "starnet-validators-pool"
+      nodePoolSize: 2 # Number of validators to deploy
+      nodeMachineType: "c2-standard-16"
+      nodeImage: "projects/injective-core/global/images/injective-starnet"
+      nodeStartupScript: "https://storage.googleapis.com/injective-starnet-bucket/startup.sh"
+      nodeDiskSizeGB: 500 # This is of the boot disk, application run's on local NVM's RAID0
+      nodeDiskType: pd-ssd # Its for OS, logs and packages
+      nodesAutoDelete: true # If this is true, nodes will use primable instances that can run only 24h https://cloud.google.com/compute/docs/instances/preemptible
+      nodePoolLabel:
+        - "starnet-validator"
+      nodeRegions:
+        - europe-west1
+        - europe-north1
+        - us-east1
+      nodeZonesPerRegion: 1
+      nodePorts:
+        - "26656"
+        - "26657"
+        - "10337"
+        - "9900"
+    ### Sentries ###
+    - nodePoolName: "starnet-sentry-node-pool"
+      nodePoolSize: 1 # Number of sentries to deploy
+      nodeImage: "projects/injective-core/global/images/injective-starnet"
+      nodeMachineType: "c2-standard-16"
+      nodeDiskSizeGB: 500 # This is of the boot disk, application run's on local NVM's RAID0
+      nodeDiskType: pd-ssd # boot SSD for OS , its persistent disk (best performance)
+      nodesAutoDelete: true # If this is true, nodes will use primable instances that can run only 24h https://cloud.google.com/compute/docs/instances/preemptible
+      nodePoolLabel:
+        - starnet-sentry
+      nodeRegions:
+        - europe-west1
+        - europe-north1
+        - europe-southwest1
+      nodeZonesPerRegion: 2
+      nodePorts:
+        - "26656"
+        - "26657"
+        - "10337"
+        - "9900"
+  # Team keys, so we can ssh into the nodes
+  starnet:sshKeys:
+    keys:
+      - # Nikolas's key
+        username: "injectived"
+        key: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDAYqu6jKi/nU2guZr0qyUiB9YW/C5rL+HGcGRtkybuzxzTs9EjDN/I/aKf70le48e3HxvD+7po2J5d0fYS1bqDxTqQLgkDCJKorxHYKrgrK+GApsivXwIJwBs4exjiFkzvniOKAYzgLSe8isfEAhROBN2Nm6Bd0ja7tfg3Ikrg0YkJs5mbhhlrIGJW5LCpNFiZ6rveVGSkkTiCiDX0ndJQQkSzG3GU/MbyW4BthHx9+OG28G1lybb97F5wo4Gv+6dwJSXjGayq8Cz3mFsJCDoji9cCyU6OfJ2QIvx3cZ51FaILZg73lCNOWKVGFhVRpDklsT+powhGr6Ok6c9QaUhvL7q/FdIDdfFBTJS0+qonmjDCRb8CHN9/TJak8Et0+whOg0Ofw7qCJVSwWAUmqn2wvepZs9rsubCF9BsvQIsCdMCyagj2R2ttJD+/O7ydSzQ/gXKeo3fbBe8PCXrSBiBrFiioNOmrY4lHSNmh3oNTpgiCLf4PqrvO67Qp+882w+U= nmarcetic@nikolas-mbp
+      - # key for starnet@injective.network (so we can copy files over machines)
+        username: "injectived"
+        key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMO3Zw+j796R7qxDRTva8RyleQFMVQ+CfVpcI62682y1 starnet@injective.network
+      - # Maxi's key
+        username: "injectived"
+        key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINUv/6xi4IhcIsYmEcSFKqVjcMjdMtwZiq9umE4ARSWS xlab@max-mbp
+  # Starnet ssh key , so we can sync files over machines (Don't change this)
+  starnet:sshKey:
+    username: "injectived"
+    key: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDAYqu6jKi/nU2guZr0qyUiB9YW/C5rL+HGcGRtkybuzxzTs9EjDN/I/aKf70le48e3HxvD+7po2J5d0fYS1bqDxTqQLgkDCJKorxHYKrgrK+GApsivXwIJwBs4exjiFkzvniOKAYzgLSe8isfEAhROBN2Nm6Bd0ja7tfg3Ikrg0YkJs5mbhhlrIGJW5LCpNFiZ6rveVGSkkTiCiDX0ndJQQkSzG3GU/MbyW4BthHx9+OG28G1lybb97F5wo4Gv+6dwJSXjGayq8Cz3mFsJCDoji9cCyU6OfJ2QIvx3cZ51FaILZg73lCNOWKVGFhVRpDklsT+powhGr6Ok6c9QaUhvL7q/FdIDdfFBTJS0+qonmjDCRb8CHN9/TJak8Et0+whOg0Ofw7qCJVSwWAUmqn2wvepZs9rsubCF9BsvQIsCdMCyagj2R2ttJD+/O7ydSzQ/gXKeo3fbBe8PCXrSBiBrFiioNOmrY4lHSNmh3oNTpgiCLf4PqrvO67Qp+882w+U= nmarcetic@nikolas-mbp
+  # Network config
+  starnet:comet:
+    accountsNum: 10
+    validators: 2
+    sentries: 2
+    instances: 1
+    evm: false
+  starnet:injective:
+    repository: "https://github.com/InjectiveLabs/injective-core.git"
+    branch: "release/v1.14.x"

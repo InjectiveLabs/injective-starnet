@@ -1,0 +1,3 @@
+name: "injective-starnet"
+runtime: go
+description: Injective network orchestrator
