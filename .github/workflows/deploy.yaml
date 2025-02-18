@@ -11,10 +11,6 @@ jobs:
     name: Provision
     runs-on: ubuntu-22.04
     steps:
-      - name: Install CA Certificates
-        run: apt update && apt install -y ca-certificates
-      - name: Checkout
-        uses: actions/checkout@master
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -53,6 +49,7 @@ jobs:
         uses: pulumi/actions@v6
         with:
           command: up
+          work-dir: ./injective-starnet
           stack-name: InjectiveLabs/injective-starnet/starnet
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
