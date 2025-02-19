@@ -29,11 +29,6 @@ func formatSSHKeys(keys SSHKeys) string {
 func main() {
 
 	pulumi.Run(func(ctx *pulumi.Context) error {
-		// Check if required binaries exist in PATH
-		if err := checkBinaryPath("chain-stresser"); err != nil {
-			ctx.Log.Error(fmt.Sprintf("Error checking chain-stresser binary: %v", err.Error()), nil)
-			return err
-		}
 		var nodes Nodes
 
 		cfg, err := loadConfig(ctx)

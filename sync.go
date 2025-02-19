@@ -14,6 +14,7 @@ const (
 )
 
 func syncNodes(ctx *pulumi.Context, nodes Nodes, instances []*compute.Instance) error {
+
 	for i, validator := range nodes.Validators {
 		sourcePath := fmt.Sprintf("%s/validators/%d/*", CHAIN_STRESSER_PATH, i)
 		destPath := fmt.Sprintf("%s@%s:%s", "injectived", validator.IP, INJECTIVED_HOME)

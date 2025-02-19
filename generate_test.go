@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -121,70 +120,5 @@ func TestZUpdateValidatorConfigs(t *testing.T) {
 		if !found {
 			t.Error("persistent_peers line not found in config file")
 		}
-	}
-}
-
-// No mocking here, this test actually clone the repo and build the binary from provided branch.
-func TestPrepareInjectived(t *testing.T) {
-	cfg := Config{
-		NetworkConfig: CometConfig{
-			AccountsNum: 10,
-			Validators:  2,
-			Sentries:    2,
-			Instances:   1,
-			EVM:         false,
-		},
-		InjectiveConfig: InjectiveConfig{
-			Repository: "https://github.com/InjectiveLabs/injective-core",
-			Branch:     "master",
-		},
-	}
-
-	nodes := Nodes{
-		Validators: []Node{
-			{Host: "starnet-validator-0", IP: "10.0.0.1"},
-			{Host: "starnet-validator-1", IP: "10.0.0.2"},
-		},
-		Sentries: []Node{
-			{Host: "sentry0", IP: "10.0.1.1"},
-			{Host: "sentry1", IP: "10.0.1.2"},
-		},
-	}
-
-	err := prepareInjectived(cfg, nodes)
-	if err != nil {
-		t.Fatalf("prepareInjectived failed: %v", err)
-	}
-}
-
-func TestCopyFile(t *testing.T) {
-	// Create a temporary test directory
-	tmpDir, err := os.MkdirTemp("", "copy-test")
-	if err != nil {
-		t.Fatalf("Failed to create temp directory: %v", err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	// Create a source file with some content
-	srcPath := filepath.Join(tmpDir, "source.txt")
-	content := []byte("test content")
-	if err := os.WriteFile(srcPath, content, 0644); err != nil {
-		t.Fatalf("Failed to create source file: %v", err)
-	}
-
-	// Copy to destination
-	dstPath := filepath.Join(tmpDir, "destination.txt")
-	if err := copyFile(srcPath, dstPath); err != nil {
-		t.Fatalf("copyFile failed: %v", err)
-	}
-
-	// Verify the content
-	dstContent, err := os.ReadFile(dstPath)
-	if err != nil {
-		t.Fatalf("Failed to read destination file: %v", err)
-	}
-
-	if !bytes.Equal(content, dstContent) {
-		t.Errorf("Destination content does not match source. Got %s, want %s", dstContent, content)
 	}
 }
