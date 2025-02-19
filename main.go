@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/pulumi/pulumi-gcp/sdk/v7/go/gcp/compute"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
@@ -167,6 +168,8 @@ func main() {
 
 			// Sync nodes
 			_, err = NewCustomCommand(ctx, "copy-configs", func() error {
+				// Tmp Sleep to wait for SSH service to be fully available
+				time.Sleep(10 * time.Second)
 				return syncNodes(ctx, nodes, instances)
 			}, []pulumi.Resource{generateCmd}) // Wait for generateCmd to finish before copying configs
 			if err != nil {

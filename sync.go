@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	INJECTIVED_HOME = "/home/injectived/.injectived"
+	INJECTIVED_HOME = "/home/injectived/artifacts"
 	STARNET_KEY     = "keys/starnet_key"
 )
 
@@ -26,9 +26,9 @@ func syncNodes(ctx *pulumi.Context, nodes Nodes, instances []*compute.Instance) 
 		}, pulumi.DependsOn([]pulumi.Resource{instances[i]}))
 
 		if err != nil {
+			ctx.Log.Error(fmt.Sprintf("failed to copy files to validator %d: %v", i, err), nil)
 			return fmt.Errorf("failed to copy files to validator %d: %w", i, err)
 		}
-		fmt.Printf("Copying files to validator %d at %s\n", i, validator.IP)
 	}
 	return nil
 }

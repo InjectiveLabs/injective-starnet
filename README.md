@@ -33,3 +33,4 @@ Starnet is designed to be used in a cloud environment, but can also be used on a
 - [ ] Add GH Actions to deploy Starnet
 - [x] Add GH Actions to destroy Starnet
 - [ ] Impl Pulumi rollback logic, so we can destroy Starnet if something with binary goes wrong
+- [ ] Impl ssh wait logic. VM's are not ready to accept connections after creation, we need to retry.
