@@ -51,7 +51,7 @@ jobs:
 
       - name: Generate nodes configs
         run: |
-          export PATH=$PATH:$(go env GOPATH)/bin \
+          export PATH=$PATH:$(go env GOPATH)/bin
           chain-stresser generate \
             --accounts-num ${{ github.event.inputs.accounts_num }} \
             --validators ${{ github.event.inputs.validators }} \
