@@ -70,7 +70,7 @@ jobs:
           CUR_DIR=$PWD
           cd injective-core
           make install
-          cd $GOPATH/bin
+          cd $(go env GOPATH)/bin
           WASMVM_SO=$(ldd injectived | grep libwasmvm.x86_64.so | awk '{ print $3 }')
           cp $WASMVM_SO .
           
@@ -78,9 +78,6 @@ jobs:
           for i in $(seq 0 $((${{ github.event.inputs.validators }} - 1))); do
             cp injectived $WASMVM_SO $CUR_DIR/chain-stresser-deploy/validators/$i/
           done
-          
-          # Keep the original copy in chain-stresser-deploy as well
-          cp injectived $WASMVM_SO $CUR_DIR/chain-stresser-deploy/
         env:
           GOARCH: amd64
           GOOS: linux

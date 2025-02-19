@@ -30,7 +30,10 @@ Starnet is designed to be used in a cloud environment, but can also be used on a
 - [x] Figureout how to add injectived binary , build from specific branch - We build from codebase
 - [ ] Refactor logic to provision sentry nodes
 - [ ] Write docs/README
-- [ ] Add GH Actions to deploy Starnet
+- [x] Add GH Actions to deploy Starnet
+  - [ ] Ensure only one running workflow at a time (Pulumi stacks are statefull, we can't spinup infinite number of nodes by mistake, but its good to have this check to prevent builds)
+  - [ ] Add option to schedule nuking on creation (run the nuke workflow as cron job, handy if we forget to nuke)
+  - [ ] Action input should be passed to pulumi also.
 - [x] Add GH Actions to destroy Starnet
-- [ ] Impl Pulumi rollback logic, so we can destroy Starnet if something with binary goes wrong
+- [x] Impl Pulumi rollback logic, so we can destroy Starnet if something with binary goes wrong (the flow is reverse of deploy)
 - [ ] Impl ssh wait logic. VM's are not ready to accept connections after creation, we need to retry.
