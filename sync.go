@@ -21,7 +21,7 @@ func syncNodes(ctx *pulumi.Context, nodes Nodes, instances []*compute.Instance) 
 
 		// Use local command to run scp
 		_, err := local.NewCommand(ctx, fmt.Sprintf("copy-validator-%d", i), &local.CommandArgs{
-			Create: pulumi.String(fmt.Sprintf("scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i %s -r %s %s", STARNET_KEY, sourcePath, destPath)),
+			Create: pulumi.String(fmt.Sprintf("scp -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i %s -r %s %s", STARNET_KEY, sourcePath, destPath)),
 			Dir:    pulumi.String("."), // Run from current directory
 		}, pulumi.DependsOn([]pulumi.Resource{instances[i]}))
 

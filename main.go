@@ -161,6 +161,7 @@ func main() {
 				return generateNodesConfigs(cfg, nodes)
 			}, resources)
 			if err != nil {
+				ctx.Log.Error(fmt.Sprintf("error generating configs: %v", err), nil)
 				return err
 			}
 
@@ -168,7 +169,11 @@ func main() {
 			_, err = NewCustomCommand(ctx, "copy-configs", func() error {
 				return syncNodes(ctx, nodes, instances)
 			}, []pulumi.Resource{generateCmd}) // Wait for generateCmd to finish before copying configs
-			return err
+			if err != nil {
+				ctx.Log.Error(fmt.Sprintf("error syncing nodes: %v", err), nil)
+				return err
+			}
+			return nil
 		})
 
 		return nil

@@ -27,7 +27,7 @@ const (
 func generateNodesConfigs(cfg Config, nodes Nodes) error {
 
 	if err := checkArtifacts(CHAIN_STRESSER_PATH, nodes); err != nil {
-		return fmt.Errorf("Error checking artifacts: %v", err)
+		return fmt.Errorf("error checking artifacts: %v", err)
 	}
 
 	// Read node IDs from ids.json
