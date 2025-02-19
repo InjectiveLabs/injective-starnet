@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/pulumi/pulumi-gcp/sdk/v7/go/gcp/compute"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
@@ -29,11 +30,6 @@ func formatSSHKeys(keys SSHKeys) string {
 func main() {
 
 	pulumi.Run(func(ctx *pulumi.Context) error {
-		// Check if required binaries exist in PATH
-		if err := checkBinaryPath("chain-stresser"); err != nil {
-			ctx.Log.Error(fmt.Sprintf("Error checking chain-stresser binary: %v", err.Error()), nil)
-			return err
-		}
 		var nodes Nodes
 
 		cfg, err := loadConfig(ctx)
@@ -166,14 +162,21 @@ func main() {
 				return generateNodesConfigs(cfg, nodes)
 			}, resources)
 			if err != nil {
+				ctx.Log.Error(fmt.Sprintf("error generating configs: %v", err), nil)
 				return err
 			}
 
 			// Sync nodes
 			_, err = NewCustomCommand(ctx, "copy-configs", func() error {
+				// Tmp Sleep to wait for SSH service to be fully available
+				time.Sleep(10 * time.Second)
 				return syncNodes(ctx, nodes, instances)
 			}, []pulumi.Resource{generateCmd}) // Wait for generateCmd to finish before copying configs
-			return err
+			if err != nil {
+				ctx.Log.Error(fmt.Sprintf("error syncing nodes: %v", err), nil)
+				return err
+			}
+			return nil
 		})
 
 		return nil

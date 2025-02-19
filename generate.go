@@ -3,11 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
-	"strconv"
 	"strings"
 )
 
@@ -28,21 +25,9 @@ const (
 )
 
 func generateNodesConfigs(cfg Config, nodes Nodes) error {
-	// Check if chain-stresser binary exists in PATH
-	if err := checkBinaryPath("chain-stresser"); err != nil {
-		return err
-	}
-	// Run binary to generate config files
-	cmd := execCommand("chain-stresser", "generate",
-		"--accounts-num", fmt.Sprintf("%d", cfg.NetworkConfig.AccountsNum),
-		"--validators", fmt.Sprintf("%d", len(nodes.Validators)),
-		"--sentries", fmt.Sprintf("%d", len(nodes.Sentries)),
-		"--instances", fmt.Sprintf("%d", cfg.NetworkConfig.Instances),
-		"--evm", strconv.FormatBool(cfg.NetworkConfig.EVM))
 
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("error running chain-stresser: %v", err)
+	if err := checkArtifacts(CHAIN_STRESSER_PATH, nodes); err != nil {
+		return fmt.Errorf("error checking artifacts: %v", err)
 	}
 
 	// Read node IDs from ids.json
@@ -85,11 +70,6 @@ func generateNodesConfigs(cfg Config, nodes Nodes) error {
 
 	if err := updateValidatorConfigs(peers); err != nil {
 		return fmt.Errorf("error updating validator configs: %v", err)
-	}
-
-	// Build binary
-	if err := prepareInjectived(cfg, nodes); err != nil {
-		return fmt.Errorf("error preparing injectived: %v", err)
 	}
 
 	return nil
@@ -139,119 +119,29 @@ func updateValidatorConfigs(peers Peers) error {
 	return nil
 }
 
-// Pull injective-core from provided branch and build it
-func prepareInjectived(cfg Config, nodes Nodes) error {
-	workDir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("error getting working directory: %v", err)
-	}
-	injectiveAbsPath := filepath.Join(workDir, INJECTIVE_REPO_PATH)
-
-	// Clone repository if it doesn't exist
-	if _, err := os.Stat(injectiveAbsPath); os.IsNotExist(err) {
-		if err := os.MkdirAll(injectiveAbsPath, 0755); err != nil {
-			return fmt.Errorf("error creating injective directory: %v", err)
-		}
-
-		cmd := execCommand("git", "clone", cfg.InjectiveConfig.Repository, injectiveAbsPath)
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("error cloning injective repository: %v", err)
-		}
+// Check if all artifacts are present
+func checkArtifacts(path string, nodes Nodes) error {
+	// Check if if generated for validators
+	validatorsPath := path + "/validators"
+	if _, err := os.Stat(validatorsPath); os.IsNotExist(err) {
+		return fmt.Errorf("validators directory not found in %s", path)
 	}
 
-	// Checkout specified branch
-	cmd := execCommand("git", "-C", injectiveAbsPath, "checkout", cfg.InjectiveConfig.Branch)
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("error checking out branch: %v", err)
-	}
-
-	// Build binary
-	cmd = execCommand("make", "-C", injectiveAbsPath, "install")
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("error building injectived: %v", err)
-	}
-
-	// Find binary in GOPATH
-	goPath := os.Getenv("GOPATH")
-	if goPath == "" {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return fmt.Errorf("failed to get home directory: %v", err)
-		}
-		goPath = filepath.Join(homeDir, "go")
-	}
-
-	binaryPath := filepath.Join(goPath, "bin", "injectived")
-	fmt.Println(binaryPath)
-	// Get libwasmvm.x86_64.so
-	wasmLibCmd := execCommand("ldd", binaryPath, "|", "grep", "libwasmvm.x86_64.so", "|", "awk", "{ print $3 }")
-	if err := wasmLibCmd.Run(); err != nil {
-		return fmt.Errorf("error pulling libwasmvm.x86_64.so from injectived: %v", err)
-	}
-
-	wasmvmLibPath, err := wasmLibCmd.Output()
-	if err != nil {
-		return fmt.Errorf("error getting wasmvmLibPath: %v", err)
-	}
-
-	if _, err := os.Stat(binaryPath); os.IsNotExist(err) {
-		return fmt.Errorf("binary not found at %s after make install", binaryPath)
-	}
-
-	// Copy binary to each validator's directory
+	// Loop over validators and check if injectived binary and libwasmvm.x86_64.so are present
 	for i := range nodes.Validators {
-		validatorBinPath := filepath.Join(CHAIN_STRESSER_PATH, "validators", strconv.Itoa(i), "injectived")
-		if err := copyFile(binaryPath, validatorBinPath); err != nil {
-			return fmt.Errorf("error copying binary to validator %d: %v", i, err)
+		validatorDir := fmt.Sprintf("%s/%d", validatorsPath, i)
+
+		// Check if injectived binary is present and is executable
+		injectivedPath := validatorDir + "/injectived"
+		if _, err := os.Stat(injectivedPath); os.IsNotExist(err) {
+			return fmt.Errorf("injectived binary not found in %s", validatorDir)
 		}
-		// Copy wasmvmLib
-		if err := copyFile(string(wasmvmLibPath), filepath.Join(CHAIN_STRESSER_PATH, "validators", strconv.Itoa(i), "libwasmvm.x86_64.so")); err != nil {
-			return fmt.Errorf("error copying wasmvmLib to validator %d: %v", i, err)
+
+		// Check if libwasmvm.x86_64.so is present
+		wasmvmPath := validatorDir + "/libwasmvm.x86_64.so"
+		if _, err := os.Stat(wasmvmPath); os.IsNotExist(err) {
+			return fmt.Errorf("libwasmvm.x86_64.so not found in %s", validatorDir)
 		}
-	}
-
-	// Clean up build directory
-	if err := os.RemoveAll(injectiveAbsPath); err != nil {
-		return fmt.Errorf("error cleaning up injective directory: %v", err)
-	}
-
-	return nil
-}
-
-// Helper function to copy files
-func copyFile(src, dst string) error {
-	sourceFile, err := os.Open(src)
-	if err != nil {
-		return fmt.Errorf("error opening source file: %v", err)
-	}
-	defer sourceFile.Close()
-
-	destFile, err := os.Create(dst)
-	if err != nil {
-		return fmt.Errorf("error creating destination file: %v", err)
-	}
-	defer destFile.Close()
-
-	_, err = io.Copy(destFile, sourceFile)
-	if err != nil {
-		return fmt.Errorf("error copying file: %v", err)
-	}
-
-	// Close the destination file before changing permissions
-	destFile.Close()
-
-	// Set executable permissions (rwxr-xr-x)
-	if err := os.Chmod(dst, 0755); err != nil {
-		return fmt.Errorf("error setting file permissions: %v", err)
-	}
-
-	return nil
-}
-
-func checkBinaryPath(binary string) error {
-	_, err := execLookPath(binary)
-	if err != nil {
-		return fmt.Errorf("binary %s not found in PATH: %v", binary, err)
 	}
 
 	return nil

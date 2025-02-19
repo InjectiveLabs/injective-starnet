@@ -1,15 +1,92 @@
 name: Provision the network
+
 on:
-   workflow_dispatch:
+  workflow_dispatch:
     inputs:
-      validator_count:
-        description: Number of validators to deploy
-        default: 2
+      accounts_num:
+        description: Number of accounts to generate
+        required: true
+        default: 1
         type: number
+      validators:
+        description: Number of validators to deploy
+        required: true
+        default: 1
+        type: number
+      sentries:
+        description: Number of sentries to deploy
+        required: true
+        default: 1
+        type: number
+      instances:
+        description: Number of instances to deploy
+        required: true
+        default: 1
+        type: number
+      evm:
+        description: Enable EVM support (true/false)
+        required: true
+        default: false
+        type: boolean
+
 jobs:
+  build:
+    name: Generate artifacts
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout chain-stresser
+        uses: actions/checkout@master
+        with:
+          repository: InjectiveLabs/chain-stresser
+          token: ${{ secrets.GH_TOKEN }}
+          path: ./chain-stresser
+
+      - name: Build chain-stresser
+        run: |
+          cd chain-stresser
+          make install
+        env:
+          GOARCH: amd64
+          GOOS: linux
+
+      - name: Generate nodes configs
+        run: |
+          chain-stresser generate \
+            --accounts-num ${{ github.event.inputs.accounts_num }} \
+            --validators ${{ github.event.inputs.validators }} \
+            --sentries ${{ github.event.inputs.sentries }} \
+            --instances ${{ github.event.inputs.instances }} \
+            --evm ${{ github.event.inputs.evm }}
+
+      - name: Checkout injective-core
+        uses: actions/checkout@master
+        with:
+          repository: InjectiveLabs/injective-core
+          token: ${{ secrets.GH_TOKEN }}
+          path: ./injective-core
+      - name: Build injectived
+        run: |
+          CUR_DIR=$PWD
+          cd injective-core
+          make install
+          cd $GOPATH/bin
+          WASMVM_SO=$(ldd injectived | grep libwasmvm.x86_64.so | awk '{ print $3 }')
+          cp $WASMVM_SO .
+          
+          # Copy to each validator directory
+          for i in $(seq 0 $((${{ github.event.inputs.validators }} - 1))); do
+            cp injectived $WASMVM_SO $CUR_DIR/chain-stresser-deploy/validators/$i/
+          done
+          
+          # Keep the original copy in chain-stresser-deploy as well
+          cp injectived $WASMVM_SO $CUR_DIR/chain-stresser-deploy/
+        env:
+          GOARCH: amd64
+          GOOS: linux
   deploy:
     name: Provision
     runs-on: ubuntu-22.04
+    needs: build # We don't provision the network if the build fails
     steps:
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -23,21 +100,6 @@ jobs:
         uses: google-github-actions/setup-gcloud@v2
         with:
          project_id: injective-core
-      # Setup chain-stresser
-      - name: Checkout chain-stresser
-        uses: actions/checkout@master
-        with:
-          repository: InjectiveLabs/chain-stresser
-          token: ${{ secrets.GH_TOKEN }}
-          path: ./chain-stresser
-          fetch-depth: 0
-      - name: Build chain-stresser
-        run: |
-          cd chain-stresser
-          make install
-        env:
-          GOARCH: amd64
-          GOOS: linux
       - name: Checkout starnet
         uses: actions/checkout@master
         with:
