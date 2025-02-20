@@ -2,10 +2,6 @@
 
 #### Startup script that triggers on machine startup, put any logic here ###
 
-# Install dependencies
-sudo apt-get update
-sudo apt-get install -y build-essential git curl
-
 # Build raid only if it doesn't exist
 if [ ! -e "/dev/md0" ]; then
     # Build raid

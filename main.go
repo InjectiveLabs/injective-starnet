@@ -38,6 +38,11 @@ func main() {
 			return err
 		}
 
+		if err := checkBuildArtifacts(cfg); err != nil {
+			ctx.Log.Error(fmt.Sprintf("Error checking build artifacts: %v", err.Error()), nil)
+			return err
+		}
+
 		var instances []*compute.Instance
 
 		// Spin up validators fleet
@@ -181,4 +186,22 @@ func main() {
 
 		return nil
 	})
+}
+
+func checkBuildArtifacts(cfg Config) error {
+	// Fail early if artifacts are not provided, at this point we don't have any instances yet.
+	nodesMock := Nodes{
+		Validators: make([]Node, cfg.Validators.NodePoolSize),
+	}
+	for i := 0; i < cfg.Validators.NodePoolSize; i++ {
+		nodesMock.Validators[i] = Node{
+			Host: fmt.Sprintf("starnet-validator-%d", i),
+			IP:   fmt.Sprintf("10.0.0.%d", i),
+		}
+	}
+
+	if err := checkArtifacts(CHAIN_STRESSER_PATH, nodesMock); err != nil {
+		return fmt.Errorf("error checking artifacts: %v", err)
+	}
+	return nil
 }
