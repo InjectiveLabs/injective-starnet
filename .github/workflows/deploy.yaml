@@ -46,7 +46,7 @@ jobs:
             --accounts-num ${{ github.event.inputs.accounts_num }} \
             --validators ${{ github.event.inputs.validators }} \
             --sentries ${{ github.event.inputs.sentries }} \
-            --instances 0 \
+            --instances 1 \
             --evm false
 
       - name: Upload chain-stresser-deploy
