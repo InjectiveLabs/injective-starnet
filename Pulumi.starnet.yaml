@@ -15,7 +15,6 @@ config:
       nodeRegions:
         - europe-west1
         - europe-north1
-        - us-east1
       nodeZonesPerRegion: 1
       nodePorts:
         - "26656"
