@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 )
 
@@ -42,30 +43,52 @@ func generateNodesConfigs(cfg Config, nodes Nodes) error {
 	}
 
 	// Create a map to store validator index mapping.
-	// Validators are not ordered (pulumi creates them in random order, its async action)
 	validatorMap := make(map[int]int)
+	maxIndex := -1
+
+	// Sort validators by their index number
+	sort.Slice(nodes.Validators, func(i, j int) bool {
+		var index1, index2 int
+		fmt.Sscanf(nodes.Validators[i].Host, "starnet-validator-%d", &index1)
+		fmt.Sscanf(nodes.Validators[j].Host, "starnet-validator-%d", &index2)
+		return index1 < index2
+	})
+
+	// Create mapping with sorted validators
 	for i, validator := range nodes.Validators {
-		// Extract index from hostname (validator-N)
 		var index int
 		if _, err := fmt.Sscanf(validator.Host, "starnet-validator-%d", &index); err != nil {
 			return fmt.Errorf("failed to parse validator index from hostname %s: %v", validator.Host, err)
 		}
 		validatorMap[index] = i
-	}
-
-	// Assign node IDs based on validator index
-	for i := 0; i < len(nodeIDs); i++ {
-		if validatorIndex, exists := validatorMap[i]; exists {
-			nodes.Validators[validatorIndex].NetworkNodeID = nodeIDs[i]
-		} else {
-			return fmt.Errorf("validator-%d not found in nodes list", i)
+		if index > maxIndex {
+			maxIndex = index
 		}
 	}
 
-	// build the peer list
+	// Verify we have all validators from 0 to maxIndex
+	for i := 0; i <= maxIndex; i++ {
+		if _, exists := validatorMap[i]; !exists {
+			return fmt.Errorf("missing validator-%d in sequence (have %d validators)", i, len(nodes.Validators))
+		}
+	}
+
+	// Verify nodeIDs count matches validators count
+	if len(nodeIDs) != len(nodes.Validators) {
+		return fmt.Errorf("mismatch between nodeIDs (%d) and validators (%d)", len(nodeIDs), len(nodes.Validators))
+	}
+
+	// Assign nodeIDs in order
+	for i := range nodes.Validators {
+		nodes.Validators[i].NetworkNodeID = nodeIDs[i]
+	}
+
+	// Build the peer list in order
 	var peers Peers
-	for i := 0; i < len(nodes.Validators); i++ {
-		peers = append(peers, fmt.Sprintf("%s@%s:26656", nodes.Validators[i].NetworkNodeID, nodes.Validators[i].IP))
+	for i := range nodes.Validators {
+		peers = append(peers, fmt.Sprintf("%s@%s:26656",
+			nodes.Validators[i].NetworkNodeID,
+			nodes.Validators[i].IP))
 	}
 
 	if err := updateValidatorConfigs(peers); err != nil {
