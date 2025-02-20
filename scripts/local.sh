@@ -28,7 +28,7 @@ chmod -R 777 $CHAIN_STRESSER_PATH
 # copy files to validators
 # Loop over validators and copy injectived and libwasmvm.x86_64.so
 cd $GOPATH/bin
-#WASMVM_SO=$(ldd injectived | grep libwasmvm.x86_64.so | awk '{ print $3 }')
+WASMVM_SO=$(ldd injectived | grep libwasmvm.x86_64.so | awk '{ print $3 }')
 for i in $(seq 0 $(($VALIDATORS - 1))); do
     cp injectived $WASMVM_SO $ROOT_DIR/chain-stresser-deploy/validators/$i/
 done

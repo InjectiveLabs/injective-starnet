@@ -37,7 +37,7 @@ func main() {
 			ctx.Log.Error(fmt.Sprintf("Error loading configuration:%v", err.Error()), nil)
 			return err
 		}
-
+		// Validate all artifacts are provided, fail early if not
 		if err := checkBuildArtifacts(cfg); err != nil {
 			ctx.Log.Error(fmt.Sprintf("Error checking build artifacts: %v", err.Error()), nil)
 			return err
