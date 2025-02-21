@@ -49,13 +49,6 @@ jobs:
             --instances 1 \
             --evm false
 
-      - name: Upload chain-stresser-deploy
-        uses: actions/upload-artifact@v4
-        with:
-          name: chain-stresser-deploy
-          path: chain-stresser-deploy/
-          retention-days: 1
-
       - name: Checkout injective-core
         uses: actions/checkout@master
         with:
@@ -79,6 +72,12 @@ jobs:
         env:
           GOARCH: amd64
           GOOS: linux
+      - name: Upload chain-stresser-deploy
+        uses: actions/upload-artifact@v4
+        with:
+          name: chain-stresser-deploy
+          path: chain-stresser-deploy/
+          retention-days: 1
 
   deploy:
     name: Provision
