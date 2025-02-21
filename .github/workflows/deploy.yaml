@@ -120,8 +120,17 @@ jobs:
           command: up
           stack-name: InjectiveLabs/injective-starnet/starnet
           work-dir: ./injective-starnet
-          config-map: |
-            {"starnet:nodePools.0.nodePoolSize": {"value": "${{ needs.build.outputs.validators }}", "secret": false}, "starnet:nodePools.1.nodePoolSize": {"value": "${{ needs.build.outputs.sentries }}", "secret": false}}
+          config-map: >
+            {
+              "starnet:nodePools.0.nodePoolSize": {
+                "value": ${{ needs.build.outputs.validators }},
+                "secret": false
+              },
+              "starnet:nodePools.1.nodePoolSize": {
+                "value": ${{ needs.build.outputs.sentries }},
+                "secret": false
+              }
+            }
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
           PULUMI_CONFIG_PASSPHRASE: ""
