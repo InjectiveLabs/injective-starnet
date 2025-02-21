@@ -121,8 +121,8 @@ jobs:
 
       - name: Update node pool sizes
         run: |
-          yq -i '.config."starnet:nodePools"[0].nodePoolSize = ${{ needs.build.outputs.validators }}' Pulumi.starnet.yaml
-          yq -i '.config."starnet:nodePools"[1].nodePoolSize = ${{ needs.build.outputs.sentries }}' Pulumi.starnet.yaml
+          yq -i '.config."starnet:nodePools"[0].nodePoolSize = ${{ needs.build.outputs.validators }}' ./injective-starnet/Pulumi.starnet.yaml
+          yq -i '.config."starnet:nodePools"[1].nodePoolSize = ${{ needs.build.outputs.sentries }}' ./injective-starnet/Pulumi.starnet.yaml
 
       - name: Pulumi up
         uses: pulumi/actions@v6
