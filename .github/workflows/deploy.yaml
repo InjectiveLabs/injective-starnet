@@ -85,12 +85,6 @@ jobs:
     runs-on: ubuntu-22.04
     needs: build
     steps:
-      - name: Download chain-stresser-deploy
-        uses: actions/download-artifact@v4
-        with:
-          name: chain-stresser-deploy
-          path: chain-stresser-deploy/
-
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -112,6 +106,11 @@ jobs:
           repository: InjectiveLabs/injective-starnet
           token: ${{ secrets.GH_TOKEN }}
           path: ./injective-starnet
+      - name: Download chain-stresser-deploy
+        uses: actions/download-artifact@v4
+        with:
+          name: chain-stresser-deploy
+          path: ./injective-starnet/chain-stresser-deploy/
 
       - name: Pulumi up
         uses: pulumi/actions@v6
