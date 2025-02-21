@@ -23,6 +23,9 @@ jobs:
   build:
     name: Generate artifacts
     runs-on: ubuntu-22.04
+    outputs:
+      validators: ${{ github.event.inputs.validators }}
+      sentries: ${{ github.event.inputs.sentries }}
     steps:
       - name: Checkout chain-stresser
         uses: actions/checkout@master
@@ -118,10 +121,7 @@ jobs:
           stack-name: InjectiveLabs/injective-starnet/starnet
           work-dir: ./injective-starnet
           config-map: |
-            {
-              "starnet:nodePools.0.nodePoolSize": {value: "${{ github.event.inputs.validators }}", secret: false},
-              "starnet:nodePools.1.nodePoolSize": {value: "${{ github.event.inputs.sentries }}", secret: false}
-            }
+            {"starnet:nodePools.0.nodePoolSize": {"value": "${{ needs.build.outputs.validators }}", "secret": false}, "starnet:nodePools.1.nodePoolSize": {"value": "${{ needs.build.outputs.sentries }}", "secret": false}}
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
           PULUMI_CONFIG_PASSPHRASE: ""
