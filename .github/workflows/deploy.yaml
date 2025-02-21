@@ -122,8 +122,8 @@ jobs:
           PULUMI_CONFIG_PASSPHRASE: ""
           PULUMI_CONFIG: |
             {
-              "starnet:nodePools[0].nodePoolSize": "${{ github.event.inputs.validators }}",
-              "starnet:nodePools[1].nodePoolSize": "${{ github.event.inputs.sentries }}"
+              "starnet:nodePools.0.nodePoolSize": "${{ github.event.inputs.validators }}",
+              "starnet:nodePools.1.nodePoolSize": "${{ github.event.inputs.sentries }}"
             }
 
       - name: Cleanup Artifacts
