@@ -114,23 +114,22 @@ jobs:
           name: chain-stresser-deploy
           path: ./injective-starnet/chain-stresser-deploy/
 
+      - name: Install yq
+        run: |
+          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+
+      - name: Update node pool sizes
+        run: |
+          yq -i '.config.starnet.nodePools[0].nodePoolSize = $validators' Pulumi.starnet.yaml --arg validators '${{ needs.build.outputs.validators }}'
+          yq -i '.config.starnet.nodePools[1].nodePoolSize = $sentries' Pulumi.starnet.yaml --arg sentries '${{ needs.build.outputs.sentries }}'
+
       - name: Pulumi up
         uses: pulumi/actions@v6
         with:
           command: up
           stack-name: InjectiveLabs/injective-starnet/starnet
           work-dir: ./injective-starnet
-          config-map: >
-            {
-              "starnet:nodePools.0.nodePoolSize": {
-                "value": ${{ needs.build.outputs.validators }},
-                "secret": false
-              },
-              "starnet:nodePools.1.nodePoolSize": {
-                "value": ${{ needs.build.outputs.sentries }},
-                "secret": false
-              }
-            }
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
           PULUMI_CONFIG_PASSPHRASE: ""
