@@ -13,7 +13,7 @@ const (
 	STARNET_KEY     = "keys/starnet_key"
 )
 
-func syncNodes(ctx *pulumi.Context, nodes Nodes, instances []*compute.Instance) error {
+func SyncNodes(ctx *pulumi.Context, nodes Nodes, instances []*compute.Instance) error {
 
 	for i, validator := range nodes.Validators {
 		sourcePath := fmt.Sprintf("%s/validators/%d/*", CHAIN_STRESSER_PATH, i)

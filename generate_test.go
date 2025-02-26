@@ -9,14 +9,6 @@ import (
 	"testing"
 )
 
-// Helper function to check if chain-stresser binary exists
-func checkChainStresserBinary(t *testing.T) {
-	_, err := exec.LookPath("chain-stresser")
-	if err != nil {
-		t.Fatal("chain-stresser binary not found in PATH. Please build it first.")
-	}
-}
-
 func TestAChainStresserBinaryExists(t *testing.T) {
 	_, err := exec.LookPath("chain-stresser")
 	if err != nil {
@@ -50,9 +42,9 @@ func TestGenerateNodesConfigs(t *testing.T) {
 		},
 	}
 
-	err := generateNodesConfigs(cfg, nodes)
+	err := GenerateNodesConfigs(cfg, nodes)
 	if err != nil {
-		t.Fatalf("generateNodesConfigs failed: %v", err)
+		t.Fatalf("GenerateNodesConfigs failed: %v", err)
 	}
 
 	// Verify the configs were created

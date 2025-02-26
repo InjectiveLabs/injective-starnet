@@ -7,6 +7,8 @@ import (
 	"os/exec"
 	"sort"
 	"strings"
+
+	"github.com/InjectiveLabs/injective-starnet/storage"
 )
 
 // Variable for mocking in tests
@@ -25,11 +27,12 @@ const (
 	INJECTIVED_BINARY_PATH = INJECTIVE_REPO_PATH + "/build/injectived"
 )
 
-func generateNodesConfigs(cfg Config, nodes Nodes) error {
+func GenerateNodesConfigs(cfg Config, nodes Nodes) error {
+	store := storage.NewFileStore("./storage.json")
 
-	if err := checkArtifacts(CHAIN_STRESSER_PATH, nodes); err != nil {
-		return fmt.Errorf("error checking artifacts: %v", err)
-	}
+	// if err := CheckArtifacts(CHAIN_STRESSER_PATH, nodes); err != nil {
+	// 	return fmt.Errorf("error checking artifacts: %v", err)
+	// }
 
 	// Read node IDs from ids.json
 	data, err := os.ReadFile(VALIDATORS_ID_PATH)
@@ -95,6 +98,17 @@ func generateNodesConfigs(cfg Config, nodes Nodes) error {
 		return fmt.Errorf("error updating validator configs: %v", err)
 	}
 
+	// Store the records in the storage
+	var records []storage.Record
+	for i := range nodes.Validators {
+		records = append(records, storage.Record{
+			Hostname: nodes.Validators[i].Host,
+			IP:       nodes.Validators[i].IP,
+			ID:       nodes.Validators[i].NetworkNodeID,
+		})
+	}
+	store.SetAll(records)
+
 	return nil
 }
 
@@ -143,7 +157,7 @@ func updateValidatorConfigs(peers Peers) error {
 }
 
 // Check if all artifacts are present
-func checkArtifacts(path string, nodes Nodes) error {
+func CheckArtifacts(path string, nodes Nodes) error {
 	// Check if if generated for validators
 	validatorsPath := path + "/validators"
 	if _, err := os.Stat(validatorsPath); os.IsNotExist(err) {
