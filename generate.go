@@ -30,9 +30,9 @@ const (
 func GenerateNodesConfigs(cfg Config, nodes Nodes) error {
 	store := storage.NewFileStore("./storage.json")
 
-	// if err := CheckArtifacts(CHAIN_STRESSER_PATH, nodes); err != nil {
-	// 	return fmt.Errorf("error checking artifacts: %v", err)
-	// }
+	if err := CheckArtifacts(CHAIN_STRESSER_PATH, nodes); err != nil {
+		return fmt.Errorf("error checking artifacts: %v", err)
+	}
 
 	// Read node IDs from ids.json
 	data, err := os.ReadFile(VALIDATORS_ID_PATH)
