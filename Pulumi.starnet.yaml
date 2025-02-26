@@ -13,7 +13,12 @@ config:
       nodePoolLabel:
         - "starnet-validator"
       nodeRegions:
+        # Regions where our nodeMachineType is available
         - europe-west1
+        - europe-west2
+        - europe-west3
+        - europe-west4
+        - europe-west6
         - europe-north1
       nodeZonesPerRegion: 1
       nodePorts:
@@ -21,7 +26,8 @@ config:
         - "26657"
         - "10337"
         - "9900"
-    ### Sentries ###
+        - "26660"
+
     - nodePoolName: "starnet-sentry-node-pool"
       nodePoolSize: 1 # Number of sentries to deploy
       nodeImage: "projects/injective-core/global/images/injective-starnet"
@@ -41,6 +47,7 @@ config:
         - "26657"
         - "10337"
         - "9900"
+        - "26660"
   # Team keys, so we can ssh into the nodes
   starnet:sshKeys:
     keys:

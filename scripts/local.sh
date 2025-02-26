@@ -21,7 +21,7 @@ cd $CHAIN_STRESSER_PATH
 cd $ROOT_DIR
 
 # Generate nodes configs
-chain-stresser generate --instances $INSTANCES --validators $VALIDATORS --sentries $SENTRIES --evm $EVM
+chain-stresser generate --instances $INSTANCES --validators $VALIDATORS --sentries $SENTRIES --evm $EVM --prod
 
 chmod -R 777 $CHAIN_STRESSER_PATH
 

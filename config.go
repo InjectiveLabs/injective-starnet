@@ -24,6 +24,17 @@ type NodePool struct {
 	NodePorts          []string `json:"nodePorts,omitempty"`
 }
 
+type Node struct {
+	Host          string `json:"host"`
+	IP            string `json:"ip"`
+	NetworkNodeID string `json:"NetworkNodeID"`
+}
+
+type Nodes struct {
+	Validators []Node
+	Sentries   []Node
+}
+
 type CometConfig struct {
 	AccountsNum int  `json:"accountsNum"`
 	Validators  int  `json:"validators"`
@@ -56,7 +67,7 @@ type Config struct {
 	InjectiveConfig InjectiveConfig
 }
 
-func loadConfig(ctx *pulumi.Context) (Config, error) {
+func LoadConfig(ctx *pulumi.Context) (Config, error) {
 	gcpConfig := config.New(ctx, "gcp")
 	starnetConfig := config.New(ctx, "starnet")
 

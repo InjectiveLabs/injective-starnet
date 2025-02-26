@@ -6,7 +6,7 @@ import (
 )
 
 // createFirewall creates a firewall rule for all node types by checking the labels
-func createFirewall(ctx *pulumi.Context, cfg Config, instances []*compute.Instance) error {
+func CreateFirewall(ctx *pulumi.Context, cfg Config, instances []*compute.Instance) error {
 	// Collect all unique ports from both validators and sentries
 	portsMap := make(map[string]struct{})
 

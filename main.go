@@ -8,17 +8,6 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-type Node struct {
-	Host          string `json:"host"`
-	IP            string `json:"ip"`
-	NetworkNodeID string `json:"NetworkNodeID"`
-}
-
-type Nodes struct {
-	Validators []Node
-	Sentries   []Node
-}
-
 func formatSSHKeys(keys SSHKeys) string {
 	var formattedKeys string
 	for _, k := range keys.Keys {
@@ -32,7 +21,7 @@ func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
 		var nodes Nodes
 
-		cfg, err := loadConfig(ctx)
+		cfg, err := LoadConfig(ctx)
 		if err != nil {
 			ctx.Log.Error(fmt.Sprintf("Error loading configuration:%v", err.Error()), nil)
 			return err
@@ -50,7 +39,7 @@ func main() {
 		totalRegions := len(regions)
 
 		// Create only nodePoolSize number of instances
-		for instanceNum := 0; instanceNum < cfg.Validators.NodePoolSize; instanceNum++ {
+		for instanceNum := range cfg.Validators.NodePoolSize {
 			// Distribute across regions round-robin style
 			regionIndex := instanceNum % totalRegions
 			// Distribute across zones within the selected region
@@ -97,8 +86,6 @@ func main() {
 				},
 				// Add machine startup script
 				Metadata: pulumi.StringMap{
-					//TODO: Move this to image, not plays well with other metadata
-					//"startup-script-url": pulumi.String(validator.NodeStartupScript),
 					"ssh-keys": pulumi.String(formatSSHKeys(cfg.SSHKeys)),
 				},
 				// Label the node, so we have unique identifiers for each node
@@ -138,10 +125,17 @@ func main() {
 
 			instances = append(instances, vm)
 			ctx.Export(hostname, ip)
+			// Concatenate all IPs to a single string so we can easily pass it to Prometheus
+			ips := ""
+			for _, ip := range nodes.Validators {
+				ips += ip.IP + ","
+			}
+			// Convert the concatenated string to a pulumi.String
+			ctx.Export("ips", pulumi.String(ips))
 		}
 
 		// Create a firewall rule for all node types
-		if err := createFirewall(ctx, cfg, instances); err != nil {
+		if err := CreateFirewall(ctx, cfg, instances); err != nil {
 			return err
 		}
 
@@ -164,7 +158,8 @@ func main() {
 		// Wait for all instance/IPs to be available before generating configs
 		pulumi.All(interfaceIPs...).ApplyT(func(ips []interface{}) error {
 			generateCmd, err := NewCustomCommand(ctx, "generate-configs", func() error {
-				return generateNodesConfigs(cfg, nodes)
+
+				return GenerateNodesConfigs(cfg, nodes)
 			}, resources)
 			if err != nil {
 				ctx.Log.Error(fmt.Sprintf("error generating configs: %v", err), nil)
@@ -175,7 +170,7 @@ func main() {
 			_, err = NewCustomCommand(ctx, "copy-configs", func() error {
 				// Tmp Sleep to wait for SSH service to be fully available
 				time.Sleep(10 * time.Second)
-				return syncNodes(ctx, nodes, instances)
+				return SyncNodes(ctx, nodes, instances)
 			}, []pulumi.Resource{generateCmd}) // Wait for generateCmd to finish before copying configs
 			if err != nil {
 				ctx.Log.Error(fmt.Sprintf("error syncing nodes: %v", err), nil)
@@ -193,14 +188,14 @@ func checkBuildArtifacts(cfg Config) error {
 	nodesMock := Nodes{
 		Validators: make([]Node, cfg.Validators.NodePoolSize),
 	}
-	for i := 0; i < cfg.Validators.NodePoolSize; i++ {
+	for i := range nodesMock.Validators {
 		nodesMock.Validators[i] = Node{
 			Host: fmt.Sprintf("starnet-validator-%d", i),
 			IP:   fmt.Sprintf("10.0.0.%d", i),
 		}
 	}
 
-	if err := checkArtifacts(CHAIN_STRESSER_PATH, nodesMock); err != nil {
+	if err := CheckArtifacts(CHAIN_STRESSER_PATH, nodesMock); err != nil {
 		return fmt.Errorf("error checking artifacts: %v", err)
 	}
 	return nil
