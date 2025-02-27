@@ -27,10 +27,10 @@ func main() {
 			return err
 		}
 		// Validate all artifacts are provided, fail early if not
-		// if err := checkBuildArtifacts(cfg); err != nil {
-		// 	ctx.Log.Error(fmt.Sprintf("Error checking build artifacts: %v", err.Error()), nil)
-		// 	return err
-		// }
+		if err := checkBuildArtifacts(cfg); err != nil {
+			ctx.Log.Error(fmt.Sprintf("Error checking build artifacts: %v", err.Error()), nil)
+			return err
+		}
 
 		var instances []*compute.Instance
 
