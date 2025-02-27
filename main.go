@@ -27,10 +27,10 @@ func main() {
 			return err
 		}
 		// Validate all artifacts are provided, fail early if not
-		if err := checkBuildArtifacts(cfg); err != nil {
-			ctx.Log.Error(fmt.Sprintf("Error checking build artifacts: %v", err.Error()), nil)
-			return err
-		}
+		// if err := checkBuildArtifacts(cfg); err != nil {
+		// 	ctx.Log.Error(fmt.Sprintf("Error checking build artifacts: %v", err.Error()), nil)
+		// 	return err
+		// }
 
 		var instances []*compute.Instance
 
@@ -51,7 +51,11 @@ func main() {
 
 			vm, err := compute.NewInstance(ctx, hostname, &compute.InstanceArgs{
 				MachineType: pulumi.String(cfg.Validators.NodeMachineType),
-				Zone:        pulumi.String(zone),
+				AdvancedMachineFeatures: &compute.InstanceAdvancedMachineFeaturesArgs{
+					ThreadsPerCore: pulumi.Int(1),
+				},
+
+				Zone: pulumi.String(zone),
 				BootDisk: &compute.InstanceBootDiskArgs{
 					InitializeParams: &compute.InstanceBootDiskInitializeParamsArgs{
 						Image: pulumi.String(cfg.Validators.NodeImage),
