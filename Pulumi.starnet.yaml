@@ -26,7 +26,9 @@ config:
         - "26657"
         - "10337"
         - "9900"
-        - "26660"
+        - "26660" # cometbft prometheus metrics
+        - "9100" # node_exporter for prometheus metrics
+        - "9256" # process_exporter for injectived process
 
     - nodePoolName: "starnet-sentry-node-pool"
       nodePoolSize: 1 # Number of sentries to deploy
@@ -47,7 +49,9 @@ config:
         - "26657"
         - "10337"
         - "9900"
-        - "26660"
+        - "26660" # cometbft prometheus metrics
+        - "9100" # node_exporter for prometheus metrics
+        - "9256" # process_exporter for injectived process
   # Team keys, so we can ssh into the nodes
   starnet:sshKeys:
     keys:
