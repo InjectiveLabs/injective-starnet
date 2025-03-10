@@ -33,32 +33,39 @@ func TestGenerateNodesConfigs(t *testing.T) {
 
 	nodes := Nodes{
 		Validators: []Node{
-			{Host: "starnet-validator-0", IP: "10.0.0.1"},
-			{Host: "starnet-validator-1", IP: "10.0.0.2"},
+			{Host: "starnet-validators-0.injective.network", IP: "10.0.0.1"},
+			{Host: "starnet-validators-1.injective.network", IP: "10.0.0.2"},
 		},
 		Sentries: []Node{
-			{Host: "sentry0", IP: "10.0.1.1"},
-			{Host: "sentry1", IP: "10.0.1.2"},
+			{Host: "starnet-sentry-nodes-0.injective.network", IP: "10.0.1.1"},
 		},
 	}
 
-	err := GenerateNodesConfigs(cfg, nodes)
+	// Test for validators
+	err := GenerateNodesConfigs(cfg, nodes, VALIDATORS_TYPE)
 	if err != nil {
-		t.Fatalf("GenerateNodesConfigs failed: %v", err)
+		t.Fatalf("GenerateNodesConfigs failed for validators: %v", err)
 	}
 
-	// Verify the configs were created
+	// Verify the configs were created for validators
 	for i := range nodes.Validators {
 		configPath := fmt.Sprintf("%s/validators/%d/config/config.toml", CHAIN_STRESSER_PATH, i)
 		if _, err := os.Stat(configPath); os.IsNotExist(err) {
-			t.Errorf("Config not found at expected path: %s", configPath)
+			t.Errorf("Config not found at expected path for validator: %s", configPath)
 		}
 	}
 
+	// Test for sentries
+	err = GenerateNodesConfigs(cfg, nodes, SENTRIES_TYPE)
+	if err != nil {
+		t.Fatalf("GenerateNodesConfigs failed for sentries: %v", err)
+	}
+
+	// Verify the configs were created for sentries
 	for i := range nodes.Sentries {
 		configPath := fmt.Sprintf("%s/sentry-nodes/%d/config/config.toml", CHAIN_STRESSER_PATH, i)
 		if _, err := os.Stat(configPath); os.IsNotExist(err) {
-			t.Errorf("Config not found at expected path: %s", configPath)
+			t.Errorf("Config not found at expected path for sentry: %s", configPath)
 		}
 	}
 }
@@ -83,7 +90,11 @@ func TestZUpdateValidatorConfigs(t *testing.T) {
 	}
 
 	// Run the function
-	err = updateValidatorConfigs(peers)
+	nodes := make([]Node, 2)
+	nodes[0] = Node{Host: "starnet-validators-0.injective.network", IP: "10.0.0.1"}
+	nodes[1] = Node{Host: "starnet-validators-1.injective.network", IP: "10.0.0.2"}
+
+	err = updateValidatorConfigs(peers, nodes, VALIDATORS_TYPE)
 	if err != nil {
 		t.Fatalf("updateValidatorConfigs failed: %v", err)
 	}

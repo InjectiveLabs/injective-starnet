@@ -21,71 +21,83 @@ const (
 	ID_FILE_PATH        = "ids.json"
 	CHAIN_STRESSER_PATH = "chain-stresser-deploy"
 	VALIDATORS_ID_PATH  = CHAIN_STRESSER_PATH + "/" + "validators" + "/" + ID_FILE_PATH
-	SENTRIES_ID_PATH    = CHAIN_STRESSER_PATH + "/" + "sentries" + "/" + ID_FILE_PATH
+	SENTRIES_ID_PATH    = CHAIN_STRESSER_PATH + "/" + "sentry-nodes" + "/" + ID_FILE_PATH
 	INJECTIVE_REPO_PATH = "injective-core"
 	// Add path where injectived will be built
 	INJECTIVED_BINARY_PATH = INJECTIVE_REPO_PATH + "/build/injectived"
+	VALIDATORS_TYPE        = "validators"
+	SENTRIES_TYPE          = "sentry-nodes"
+	DEFAULT_TYPE           = VALIDATORS_TYPE
 )
 
-func GenerateNodesConfigs(cfg Config, nodes Nodes) error {
+func GenerateNodesConfigs(cfg Config, nodes Nodes, nodeType string) error {
+	if nodeType == "" || nodeType != VALIDATORS_TYPE && nodeType != SENTRIES_TYPE {
+		nodeType = DEFAULT_TYPE
+	}
+
 	store := storage.NewFileStore("./storage.json")
 
-	if err := CheckArtifacts(CHAIN_STRESSER_PATH, nodes); err != nil {
-		return fmt.Errorf("error checking artifacts: %v", err)
-	}
-
 	// Read node IDs from ids.json
-	data, err := os.ReadFile(VALIDATORS_ID_PATH)
+	data, err := os.ReadFile(fmt.Sprintf("%s/%s/%s", CHAIN_STRESSER_PATH, nodeType, ID_FILE_PATH))
 	if err != nil {
-		return fmt.Errorf("error reading ids.json: %v", err)
+		return fmt.Errorf("error reading %s ids.json: %v", nodeType, err)
 	}
-
 	var nodeIDs []string
 	if err := json.Unmarshal(data, &nodeIDs); err != nil {
-		return fmt.Errorf("error parsing ids.json: %v", err)
+		return fmt.Errorf("error parsing ids.json for %s: %v", nodeType, err)
 	}
 
-	// Create a map to store validator index mapping.
-	validatorMap := make(map[int]int)
+	// Determine which slice to work with
+	var nodeSlice []Node
+	switch nodeType {
+	case VALIDATORS_TYPE:
+		nodeSlice = nodes.Validators
+	case SENTRIES_TYPE:
+		nodeSlice = nodes.Sentries
+	default:
+		return fmt.Errorf("unknown node type: %s", nodeType)
+	}
+
+	// Create a map to store index mapping.
+	nodeMap := make(map[int]int)
 	maxIndex := -1
 
-	// Sort validators by their index number
-	sort.Slice(nodes.Validators, func(i, j int) bool {
+	// Sort nodes by their index number
+	sort.Slice(nodeSlice, func(i, j int) bool {
 		var index1, index2 int
-		fmt.Sscanf(nodes.Validators[i].Host, "starnet-validator-%d", &index1)
-		fmt.Sscanf(nodes.Validators[j].Host, "starnet-validator-%d", &index2)
+		fmt.Sscanf(nodeSlice[i].Host, fmt.Sprintf("starnet-%s-%%d.injective.network", nodeType), &index1)
+		fmt.Sscanf(nodeSlice[j].Host, fmt.Sprintf("starnet-%s-%%d.injective.network", nodeType), &index2)
 		return index1 < index2
 	})
 
-	// Create mapping with sorted validators
-	for i, validator := range nodes.Validators {
+	// Create mapping with sorted nodes
+	for i, node := range nodeSlice {
 		var index int
-		if _, err := fmt.Sscanf(validator.Host, "starnet-validator-%d", &index); err != nil {
-			return fmt.Errorf("failed to parse validator index from hostname %s: %v", validator.Host, err)
+		if _, err := fmt.Sscanf(node.Host, fmt.Sprintf("starnet-%s-%%d.injective.network", nodeType), &index); err != nil {
+			return fmt.Errorf("failed to parse index from hostname %s: %v", node.Host, err)
 		}
-		validatorMap[index] = i
+		nodeMap[index] = i
 		if index > maxIndex {
 			maxIndex = index
 		}
 	}
 
-	// Verify we have all validators from 0 to maxIndex
+	// Verify we have all nodes from 0 to maxIndex
 	for i := 0; i <= maxIndex; i++ {
-		if _, exists := validatorMap[i]; !exists {
-			return fmt.Errorf("missing validator-%d in sequence (have %d validators)", i, len(nodes.Validators))
+		if _, exists := nodeMap[i]; !exists {
+			return fmt.Errorf("missing %s-%d in sequence (have %d %s)", nodeType, i, len(nodeSlice), nodeType)
 		}
 	}
 
-	// Verify nodeIDs count matches validators count
-	if len(nodeIDs) != len(nodes.Validators) {
-		return fmt.Errorf("mismatch between nodeIDs (%d) and validators (%d)", len(nodeIDs), len(nodes.Validators))
+	// Verify nodeIDs count matches nodes count
+	if len(nodeIDs) != len(nodeSlice) {
+		return fmt.Errorf("mismatch between nodeIDs (%d) and nodes (%d)", len(nodeIDs), len(nodeSlice))
 	}
 
 	// Assign nodeIDs in order
-	for i := range nodes.Validators {
-		nodes.Validators[i].NetworkNodeID = nodeIDs[i]
+	for i := range nodeSlice {
+		nodeSlice[i].NetworkNodeID = nodeIDs[i]
 	}
-
 	// Build the peer list in order
 	var peers Peers
 	for i := range nodes.Validators {
@@ -94,31 +106,34 @@ func GenerateNodesConfigs(cfg Config, nodes Nodes) error {
 			nodes.Validators[i].IP))
 	}
 
-	if err := updateValidatorConfigs(peers); err != nil {
-		return fmt.Errorf("error updating validator configs: %v", err)
+	if err := updateValidatorConfigs(peers, nodeSlice, nodeType); err != nil {
+		return fmt.Errorf("error updating node configs: %v", err)
 	}
 
 	// Store the records in the storage
-	var records []storage.Record
-	for i := range nodes.Validators {
-		records = append(records, storage.Record{
-			Hostname: nodes.Validators[i].Host,
-			IP:       nodes.Validators[i].IP,
-			ID:       nodes.Validators[i].NetworkNodeID,
-		})
+	if nodeType == VALIDATORS_TYPE {
+		var records []storage.Record
+		for i := range nodes.Validators {
+			records = append(records, storage.Record{
+				Hostname: nodeSlice[i].Host,
+				IP:       nodeSlice[i].IP,
+				ID:       nodeSlice[i].NetworkNodeID,
+			})
+		}
+		store.SetAll(records)
 	}
-	store.SetAll(records)
 
 	return nil
 }
 
-func updateValidatorConfigs(peers Peers) error {
+func updateValidatorConfigs(peers Peers, nodeSlice []Node, nodeType string) error {
 	// Convert peers slice to comma-separated string
+	fmt.Println("peers", peers)
 	peersStr := strings.Join(peers, ",")
 
 	// Loop through each validator directory
-	for i := range peers {
-		configPath := fmt.Sprintf("%s/%d/config/config.toml", CHAIN_STRESSER_PATH+"/validators", i)
+	for i := range nodeSlice {
+		configPath := fmt.Sprintf("%s/%d/config/config.toml", CHAIN_STRESSER_PATH+"/"+nodeType, i)
 
 		// Read the existing config file
 		content, err := os.ReadFile(configPath)
@@ -179,6 +194,12 @@ func CheckArtifacts(path string, nodes Nodes) error {
 		if _, err := os.Stat(wasmvmPath); os.IsNotExist(err) {
 			return fmt.Errorf("libwasmvm.x86_64.so not found in %s", validatorDir)
 		}
+	}
+
+	// Check if if generated for sentry nodes
+	sentryNodesPath := path + "/sentry-nodes"
+	if _, err := os.Stat(sentryNodesPath); os.IsNotExist(err) {
+		return fmt.Errorf("sentry nodes directory not found in %s", path)
 	}
 
 	return nil

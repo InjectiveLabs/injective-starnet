@@ -3,8 +3,9 @@
 # Define chain-stresser config params
 INSTANCES=1
 VALIDATORS=2
-SENTRIES=2
+SENTRIES=1
 EVM=false
+PROD=true
 
 INJECTIVE_CORE_PATH="../injective-core"
 CHAIN_STRESSER_PATH="../chain-stresser"
@@ -21,7 +22,7 @@ cd $CHAIN_STRESSER_PATH
 cd $ROOT_DIR
 
 # Generate nodes configs
-chain-stresser generate --instances $INSTANCES --validators $VALIDATORS --sentries $SENTRIES --evm $EVM --prod
+chain-stresser generate --instances $INSTANCES --validators $VALIDATORS --sentries $SENTRIES --evm $EVM --prod $PROD
 
 chmod -R 777 $CHAIN_STRESSER_PATH
 

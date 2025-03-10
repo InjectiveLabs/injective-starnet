@@ -40,9 +40,7 @@ config:
       nodePoolLabel:
         - starnet-sentry
       nodeRegions:
-        - europe-west1
         - europe-north1
-        - europe-southwest1
       nodeZonesPerRegion: 2
       nodePorts:
         - "26656"
