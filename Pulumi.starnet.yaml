@@ -70,7 +70,7 @@ config:
   starnet:comet:
     accountsNum: 2
     validators: 2
-    sentries: 2
+    sentries: 1
     instances: 1
     evm: false
   starnet:injective:

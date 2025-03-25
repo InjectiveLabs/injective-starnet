@@ -128,7 +128,6 @@ func GenerateNodesConfigs(cfg Config, nodes Nodes, nodeType string) error {
 
 func updateValidatorConfigs(peers Peers, nodeSlice []Node, nodeType string) error {
 	// Convert peers slice to comma-separated string
-	fmt.Println("peers", peers)
 	peersStr := strings.Join(peers, ",")
 
 	// Loop through each validator directory
