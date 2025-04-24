@@ -91,7 +91,16 @@ func GenerateNodesConfigs(cfg Config, nodes Nodes, nodeType string) error {
 
 	// Verify nodeIDs count matches nodes count
 	if len(nodeIDs) != len(nodeSlice) {
-		return fmt.Errorf("mismatch between nodeIDs (%d) and nodes (%d)", len(nodeIDs), len(nodeSlice))
+		return fmt.Errorf("mismatch between nodeIDs (%d) and nodes (%d) for %s. Node IDs: %v, Nodes: %v",
+			len(nodeIDs), len(nodeSlice), nodeType,
+			nodeIDs,
+			func() []string {
+				result := make([]string, len(nodeSlice))
+				for i, node := range nodeSlice {
+					result[i] = node.Host
+				}
+				return result
+			}())
 	}
 
 	// Assign nodeIDs in order
@@ -100,20 +109,12 @@ func GenerateNodesConfigs(cfg Config, nodes Nodes, nodeType string) error {
 	}
 	// Build the peer list in order
 	var peers Peers
-	for i := range nodes.Validators {
-		peers = append(peers, fmt.Sprintf("%s@%s:26656",
-			nodes.Validators[i].NetworkNodeID,
-			nodes.Validators[i].IP))
-	}
-
-	if err := updateValidatorConfigs(peers, nodeSlice, nodeType); err != nil {
-		return fmt.Errorf("error updating node configs: %v", err)
-	}
-
-	// Store the records in the storage
 	if nodeType == VALIDATORS_TYPE {
 		var records []storage.Record
 		for i := range nodes.Validators {
+			peers = append(peers, fmt.Sprintf("%s@%s:26656",
+				nodes.Validators[i].NetworkNodeID,
+				nodes.Validators[i].IP))
 			records = append(records, storage.Record{
 				Hostname: nodeSlice[i].Host,
 				IP:       nodeSlice[i].IP,
@@ -121,12 +122,29 @@ func GenerateNodesConfigs(cfg Config, nodes Nodes, nodeType string) error {
 			})
 		}
 		store.SetAll(records)
+	} else if nodeType == SENTRIES_TYPE {
+		// For sentry nodes, get validator peers from storage
+		records, err := store.GetAll()
+		if err != nil {
+			return fmt.Errorf("error reading validator records from storage: %v", err)
+		}
+
+		// Build peers list from storage records
+		for _, record := range records {
+			peers = append(peers, fmt.Sprintf("%s@%s:26656",
+				record.ID,
+				record.IP))
+		}
+	}
+
+	if err := updateNodesConfigs(peers, nodeSlice, nodeType); err != nil {
+		return fmt.Errorf("error updating node configs: %v", err)
 	}
 
 	return nil
 }
 
-func updateValidatorConfigs(peers Peers, nodeSlice []Node, nodeType string) error {
+func updateNodesConfigs(peers Peers, nodeSlice []Node, nodeType string) error {
 	// Convert peers slice to comma-separated string
 	peersStr := strings.Join(peers, ",")
 
@@ -176,23 +194,6 @@ func CheckArtifacts(path string, nodes Nodes) error {
 	validatorsPath := path + "/validators"
 	if _, err := os.Stat(validatorsPath); os.IsNotExist(err) {
 		return fmt.Errorf("validators directory not found in %s", path)
-	}
-
-	// Loop over validators and check if injectived binary and libwasmvm.x86_64.so are present
-	for i := range nodes.Validators {
-		validatorDir := fmt.Sprintf("%s/%d", validatorsPath, i)
-
-		// Check if injectived binary is present and is executable
-		injectivedPath := validatorDir + "/injectived"
-		if _, err := os.Stat(injectivedPath); os.IsNotExist(err) {
-			return fmt.Errorf("injectived binary not found in %s", validatorDir)
-		}
-
-		// Check if libwasmvm.x86_64.so is present
-		wasmvmPath := validatorDir + "/libwasmvm.x86_64.so"
-		if _, err := os.Stat(wasmvmPath); os.IsNotExist(err) {
-			return fmt.Errorf("libwasmvm.x86_64.so not found in %s", validatorDir)
-		}
 	}
 
 	// Check if if generated for sentry nodes

@@ -26,12 +26,17 @@ wait_for_raid() {
 # Wait for all required artifacts to be copied
 wait_for_artifacts() {
     local max_wait=300  # 5 minutes timeout
-    local required_items=(
-        "data"
-        "config"
-        "injectived"
-        "libwasmvm.x86_64.so"
-    )
+    # Check if this is a sentry node, we don't generate data for them
+    if [[ "$(hostname)" == *sentry* ]]; then
+        local required_items=(
+            "config"
+        )
+    else
+        local required_items=(
+            "data"
+            "config"
+        )
+    fi
 
     echo "⏳ Waiting for all required artifacts in $ARTIFACTS_DIR..."
     for i in $(seq 1 $max_wait); do
