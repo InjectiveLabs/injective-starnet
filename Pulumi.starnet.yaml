@@ -3,7 +3,7 @@ config:
   starnet:nodePools:
     ### Validators ###
     - nodePoolName: "starnet-validators-pool"
-      nodePoolSize: 8 # Number of validators to deploy
+      nodePoolSize: 2 # Number of validators to deploy
       nodeMachineType: "c2-standard-16"
       nodeImage: "projects/injective-core/global/images/injective-starnet"
       nodeStartupScript: "https://storage.googleapis.com/injective-starnet-bucket/startup.sh"
@@ -31,7 +31,7 @@ config:
         - "9256" # process_exporter for injectived process
 
     - nodePoolName: "starnet-sentry-node-pool"
-      nodePoolSize: 2 # Number of sentries to deploy
+      nodePoolSize: 1 # Number of sentries to deploy
       nodeImage: "projects/injective-core/global/images/injective-starnet"
       nodeMachineType: "c2-standard-16"
       nodeDiskSizeGB: 500 # This is of the boot disk, application run's on local NVM's RAID0
