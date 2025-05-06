@@ -1,34 +1,64 @@
-package main
+package pulumi
 
 import (
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
 
-	"github.com/InjectiveLabs/injective-starnet/storage"
+	"github.com/InjectiveLabs/injective-starnet/pkg/storage"
 )
 
 // Variable for mocking in tests
 var execCommand = exec.Command
 var execLookPath = exec.LookPath
 
-type Peers []string
-
 const (
-	ID_FILE_PATH        = "ids.json"
-	CHAIN_STRESSER_PATH = "chain-stresser-deploy"
-	VALIDATORS_ID_PATH  = CHAIN_STRESSER_PATH + "/" + "validators" + "/" + ID_FILE_PATH
-	SENTRIES_ID_PATH    = CHAIN_STRESSER_PATH + "/" + "sentry-nodes" + "/" + ID_FILE_PATH
-	INJECTIVE_REPO_PATH = "injective-core"
-	// Add path where injectived will be built
+	ID_FILE_PATH = "ids.json"
+)
+
+var (
+	// These will be initialized in init()
+	CHAIN_STRESSER_PATH    string
+	VALIDATORS_ID_PATH     string
+	SENTRIES_ID_PATH       string
+	INJECTIVE_REPO_PATH    = "injective-core"
 	INJECTIVED_BINARY_PATH = INJECTIVE_REPO_PATH + "/build/injectived"
-	VALIDATORS_TYPE        = "validators"
-	SENTRIES_TYPE          = "sentry-nodes"
 	DEFAULT_TYPE           = VALIDATORS_TYPE
 )
+
+func init() {
+	// Get the executable's directory
+	execPath, err := os.Executable()
+	if err != nil {
+		panic(fmt.Sprintf("failed to get executable path: %v", err))
+	}
+	execDir := filepath.Dir(execPath)
+
+	// Check for environment variable first
+	configPath := os.Getenv("INJECTIVE_STARNET_CONFIG_PATH")
+	if configPath != "" {
+		// Validate the path exists
+		if _, err := os.Stat(configPath); os.IsNotExist(err) {
+			fmt.Printf("Warning: INJECTIVE_STARNET_CONFIG_PATH does not exist: %s\n", configPath)
+		} else {
+			// Use the environment variable path
+			CHAIN_STRESSER_PATH = configPath
+		}
+	}
+
+	// If environment variable is not set or path doesn't exist, use default
+	if CHAIN_STRESSER_PATH == "" {
+		CHAIN_STRESSER_PATH = filepath.Join(execDir, "chain-stresser-deploy")
+	}
+
+	// Set up paths relative to the chain-stresser-deploy directory
+	VALIDATORS_ID_PATH = filepath.Join(CHAIN_STRESSER_PATH, "validators", ID_FILE_PATH)
+	SENTRIES_ID_PATH = filepath.Join(CHAIN_STRESSER_PATH, "sentry-nodes", ID_FILE_PATH)
+}
 
 func GenerateNodesConfigs(cfg Config, nodes Nodes, nodeType string) error {
 	if nodeType == "" || nodeType != VALIDATORS_TYPE && nodeType != SENTRIES_TYPE {
@@ -150,7 +180,14 @@ func updateNodesConfigs(peers Peers, nodeSlice []Node, nodeType string) error {
 
 	// Loop through each validator directory
 	for i := range nodeSlice {
-		configPath := fmt.Sprintf("%s/%d/config/config.toml", CHAIN_STRESSER_PATH+"/"+nodeType, i)
+		var configPath string
+		if nodeType == VALIDATORS_TYPE {
+			configPath = filepath.Join(CHAIN_STRESSER_PATH, "validators", fmt.Sprintf("%d", i), "config", "config.toml")
+		} else if nodeType == SENTRIES_TYPE {
+			configPath = filepath.Join(CHAIN_STRESSER_PATH, "sentry-nodes", fmt.Sprintf("%d", i), "config", "config.toml")
+		} else {
+			return fmt.Errorf("unknown node type: %s", nodeType)
+		}
 
 		// Read the existing config file
 		content, err := os.ReadFile(configPath)

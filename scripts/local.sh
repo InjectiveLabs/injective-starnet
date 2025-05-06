@@ -2,8 +2,8 @@
 
 # Define chain-stresser config params
 INSTANCES=1
-VALIDATORS=8
-SENTRIES=2
+VALIDATORS=60
+SENTRIES=1
 EVM=false
 PROD=true
 # Generate nodes configs

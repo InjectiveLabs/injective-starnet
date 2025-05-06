@@ -1,4 +1,4 @@
-package main
+package pulumi
 
 import (
 	"fmt"
@@ -18,13 +18,6 @@ func TestAChainStresserBinaryExists(t *testing.T) {
 
 func TestGenerateNodesConfigs(t *testing.T) {
 	cfg := Config{
-		NetworkConfig: CometConfig{
-			AccountsNum: 10,
-			Validators:  2,
-			Sentries:    2,
-			Instances:   1,
-			EVM:         false,
-		},
 		InjectiveConfig: InjectiveConfig{
 			Repository: "https://github.com/InjectiveLabs/injective-core",
 			Branch:     "master",

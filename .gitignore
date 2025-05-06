@@ -2,3 +2,5 @@ chain-stresser-deploy/
 injective-core/
 storage.json
 .injectived/
+build/
+starnet

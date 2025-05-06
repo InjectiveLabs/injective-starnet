@@ -1,4 +1,4 @@
-package main
+package pulumi
 
 import (
 	"fmt"
@@ -11,39 +11,52 @@ import (
 
 const (
 	INJECTIVED_HOME = "/home/injectived/artifacts"
-	STARNET_KEY     = "keys/starnet_key"
 )
 
-func SyncNodes(ctx *pulumi.Context, cfg Config, nodes Nodes, instances []*compute.Instance) error {
+func getStarnetKeyPath() (string, error) {
+	return GetStarnetKey()
+}
 
-	for i, validator := range nodes.Validators {
+func SyncNodes(ctx *pulumi.Context, cfg Config, nodes Nodes, instances []*compute.Instance) error {
+	// Sync validators
+	for i, node := range nodes.Validators {
 		sourcePath := fmt.Sprintf("%s/validators/%d/*", CHAIN_STRESSER_PATH, i)
-		destPath := fmt.Sprintf("%s@%s:%s", "injectived", validator.IP, INJECTIVED_HOME)
+		destPath := fmt.Sprintf("injectived@%s:%s", node.IP, INJECTIVED_HOME)
+
+		// Get the starnet key path
+		starnetKey, err := getStarnetKeyPath()
+		if err != nil {
+			return fmt.Errorf("failed to get starnet key: %w", err)
+		}
 
 		// Use local command to run scp
-		_, err := local.NewCommand(ctx, fmt.Sprintf("copy-validator-%d", i), &local.CommandArgs{
-			Create: pulumi.String(fmt.Sprintf("scp -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i %s -r %s %s", STARNET_KEY, sourcePath, destPath)),
+		_, err = local.NewCommand(ctx, fmt.Sprintf("copy-validator-%d", i), &local.CommandArgs{
+			Create: pulumi.String(fmt.Sprintf("scp -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i %s -r %s %s", starnetKey, sourcePath, destPath)),
 			Dir:    pulumi.String("."), // Run from current directory
 		}, pulumi.DependsOn([]pulumi.Resource{instances[i]}))
-
 		if err != nil {
-			ctx.Log.Error(fmt.Sprintf("failed to copy files to validator %d: %v", i, err), nil)
-			return fmt.Errorf("failed to copy files to validator %d: %w", i, err)
+			return fmt.Errorf("failed to create copy command for validator %d: %w", i, err)
 		}
 	}
-	for i, sentry := range nodes.Sentries {
+
+	// Sync sentry nodes
+	for i, node := range nodes.Sentries {
 		sourcePath := fmt.Sprintf("%s/sentry-nodes/%d/*", CHAIN_STRESSER_PATH, i)
-		destPath := fmt.Sprintf("%s@%s:%s", "injectived", sentry.IP, INJECTIVED_HOME)
+		destPath := fmt.Sprintf("injectived@%s:%s", node.IP, INJECTIVED_HOME)
+
+		// Get the starnet key path
+		starnetKey, err := getStarnetKeyPath()
+		if err != nil {
+			return fmt.Errorf("failed to get starnet key: %w", err)
+		}
 
 		// Use local command to run scp
-		_, err := local.NewCommand(ctx, fmt.Sprintf("copy-sentry-%d", i), &local.CommandArgs{
-			Create: pulumi.String(fmt.Sprintf("scp -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i %s -r %s %s", STARNET_KEY, sourcePath, destPath)),
+		_, err = local.NewCommand(ctx, fmt.Sprintf("copy-sentry-%d", i), &local.CommandArgs{
+			Create: pulumi.String(fmt.Sprintf("scp -r -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i %s -r %s %s", starnetKey, sourcePath, destPath)),
 			Dir:    pulumi.String("."), // Run from current directory
 		}, pulumi.DependsOn([]pulumi.Resource{instances[i]}))
-
 		if err != nil {
-			ctx.Log.Error(fmt.Sprintf("failed to copy files to sentry %d: %v", i, err), nil)
-			return fmt.Errorf("failed to copy files to sentry %d: %w", i, err)
+			return fmt.Errorf("failed to create copy command for sentry %d: %w", i, err)
 		}
 	}
 

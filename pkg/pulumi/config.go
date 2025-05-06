@@ -1,9 +1,15 @@
-package main
+package pulumi
 
 import (
+	"embed"
+
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
+	"gopkg.in/yaml.v3"
 )
+
+//go:embed Pulumi.yaml Pulumi.starnet.yaml
+var configFiles embed.FS
 
 type Network struct {
 	Name string `json:"networkName"`
@@ -24,25 +30,6 @@ type NodePool struct {
 	NodePorts          []string `json:"nodePorts,omitempty"`
 }
 
-type Node struct {
-	Host          string `json:"host"`
-	IP            string `json:"ip"`
-	NetworkNodeID string `json:"NetworkNodeID"`
-}
-
-type Nodes struct {
-	Validators []Node
-	Sentries   []Node
-}
-
-type CometConfig struct {
-	AccountsNum int  `json:"accountsNum"`
-	Validators  int  `json:"validators"`
-	Sentries    int  `json:"sentries"`
-	Instances   int  `json:"instances"`
-	EVM         bool `json:"evm"`
-}
-
 // Add new SSH key structure
 type SSHKey struct {
 	Username string `json:"username"`
@@ -59,40 +46,60 @@ type InjectiveConfig struct {
 }
 
 type Config struct {
-	Project         string      `json:"project"`
-	SSHKeys         SSHKeys     `json:"sshKeys"`
-	Validators      NodePool    `json:"validators"`
-	Sentries        NodePool    `json:"sentries"`
-	NetworkConfig   CometConfig `json:"comet"`
+	Project         string   `json:"project"`
+	SSHKeys         SSHKeys  `json:"sshKeys"`
+	Validators      NodePool `json:"validators"`
+	Sentries        NodePool `json:"sentries"`
 	InjectiveConfig InjectiveConfig
 }
 
+type PulumiConfig struct {
+	Config map[string]interface{} `yaml:"config"`
+}
+
+// GetPulumiYAML returns the embedded Pulumi.yaml content
+func GetPulumiYAML() ([]byte, error) {
+	return configFiles.ReadFile("Pulumi.yaml")
+}
+
+// LoadEmbeddedConfig loads and parses the embedded Pulumi.starnet.yaml
+func LoadEmbeddedConfig() (map[string]interface{}, error) {
+	content, err := configFiles.ReadFile("Pulumi.starnet.yaml")
+	if err != nil {
+		return nil, err
+	}
+
+	var config PulumiConfig
+	if err := yaml.Unmarshal(content, &config); err != nil {
+		return nil, err
+	}
+
+	return config.Config, nil
+}
+
+// LoadConfig loads the configuration from Pulumi config
 func LoadConfig(ctx *pulumi.Context) (Config, error) {
 	gcpConfig := config.New(ctx, "gcp")
-	starnetConfig := config.New(ctx, "starnet")
+	cfg := config.New(ctx, "")
 
 	project := gcpConfig.Require("project")
 
 	var sshKeys SSHKeys
-	starnetConfig.RequireObject("sshKeys", &sshKeys)
+	cfg.RequireObject("sshKeys", &sshKeys)
 
 	var injectiveConfig InjectiveConfig
-	starnetConfig.RequireObject("injective", &injectiveConfig)
+	cfg.RequireObject("injective", &injectiveConfig)
 
 	var nodePools []NodePool
-	starnetConfig.RequireObject("nodePools", &nodePools)
+	cfg.RequireObject("nodePools", &nodePools)
 	validators := nodePools[0]
 	sentries := nodePools[1]
-
-	var cometConfig CometConfig
-	starnetConfig.RequireObject("comet", &cometConfig)
 
 	return Config{
 		Project:         project,
 		SSHKeys:         sshKeys,
 		Validators:      validators,
 		Sentries:        sentries,
-		NetworkConfig:   cometConfig,
 		InjectiveConfig: injectiveConfig,
 	}, nil
 }

@@ -1,0 +1,4 @@
+name: injective-starnet
+runtime: go
+#main: /users/nmarcetic/work/injective/injective-starnet/pkg/pulumi
+description: Injective Starnet Infrastructure

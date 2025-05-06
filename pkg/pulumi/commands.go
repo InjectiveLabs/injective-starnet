@@ -1,4 +1,4 @@
-package main
+package pulumi
 
 import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
