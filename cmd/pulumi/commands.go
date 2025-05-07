@@ -28,6 +28,8 @@ func newUpCmd() *cobra.Command {
 	var (
 		validatorSize int
 		sentrySize    int
+		artifactsPath string
+		buildBranch   string
 	)
 
 	cmd := &cobra.Command{
@@ -37,7 +39,7 @@ func newUpCmd() *cobra.Command {
 			ctx := context.Background()
 
 			// Setup Pulumi stack with configuration
-			stack, err := setupPulumiStack(ctx, validatorSize, sentrySize)
+			stack, err := setupPulumiStack(ctx, validatorSize, sentrySize, buildBranch, artifactsPath)
 			if err != nil {
 				return err
 			}
@@ -69,6 +71,8 @@ func newUpCmd() *cobra.Command {
 
 	cmd.Flags().IntVar(&validatorSize, "validators", 0, "Override the number of validator nodes")
 	cmd.Flags().IntVar(&sentrySize, "sentries", 0, "Override the number of sentry nodes")
+	cmd.Flags().StringVar(&artifactsPath, "artifacts-path", "", "Path to chain-stresser-deploy directory (alternative to INJECTIVE_STARNET_CONFIG_PATH)")
+	cmd.Flags().StringVar(&buildBranch, "build-branch", "", "Override the injective-core branch to build from")
 
 	return cmd
 }
@@ -77,6 +81,8 @@ func newPreviewCmd() *cobra.Command {
 	var (
 		validatorSize int
 		sentrySize    int
+		artifactsPath string
+		buildBranch   string
 	)
 
 	cmd := &cobra.Command{
@@ -86,7 +92,7 @@ func newPreviewCmd() *cobra.Command {
 			ctx := context.Background()
 
 			// Setup Pulumi stack with configuration
-			stack, err := setupPulumiStack(ctx, validatorSize, sentrySize)
+			stack, err := setupPulumiStack(ctx, validatorSize, sentrySize, buildBranch, artifactsPath)
 			if err != nil {
 				return err
 			}
@@ -108,11 +114,17 @@ func newPreviewCmd() *cobra.Command {
 
 	cmd.Flags().IntVar(&validatorSize, "validators", 0, "Override the number of validator nodes")
 	cmd.Flags().IntVar(&sentrySize, "sentries", 0, "Override the number of sentry nodes")
+	cmd.Flags().StringVar(&artifactsPath, "artifacts-path", "", "Path to chain-stresser-deploy directory (the output of chain-stresser generate command)")
+	cmd.Flags().StringVar(&buildBranch, "build-branch", "", "Override the injective-core branch to build from")
 
 	return cmd
 }
 
 func newDestroyCmd() *cobra.Command {
+	var (
+		artifactsPath string
+	)
+
 	cmd := &cobra.Command{
 		Use:   "destroy",
 		Short: "Destroy the Injective Starnet network",
@@ -120,7 +132,7 @@ func newDestroyCmd() *cobra.Command {
 			ctx := context.Background()
 
 			// Setup Pulumi stack with configuration
-			stack, err := setupPulumiStack(ctx, 0, 0)
+			stack, err := setupPulumiStack(ctx, 0, 0, "", artifactsPath)
 			if err != nil {
 				return err
 			}
@@ -142,6 +154,8 @@ func newDestroyCmd() *cobra.Command {
 			})
 		},
 	}
+
+	cmd.Flags().StringVar(&artifactsPath, "artifacts-path", "", "Path to chain-stresser-deploy directory (alternative to INJECTIVE_STARNET_CONFIG_PATH)")
 
 	return cmd
 }

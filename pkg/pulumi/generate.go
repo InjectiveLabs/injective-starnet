@@ -30,37 +30,31 @@ var (
 	DEFAULT_TYPE           = VALIDATORS_TYPE
 )
 
-func init() {
-	// Get the executable's directory
-	execPath, err := os.Executable()
-	if err != nil {
-		panic(fmt.Sprintf("failed to get executable path: %v", err))
-	}
-	execDir := filepath.Dir(execPath)
+// func init() {
+// 	// Get the executable's directory
+// 	execPath, err := os.Executable()
+// 	if err != nil {
+// 		panic(fmt.Sprintf("failed to get executable path: %v", err))
+// 	}
+// 	execDir := filepath.Dir(execPath)
 
-	// Check for environment variable first
-	configPath := os.Getenv("INJECTIVE_STARNET_CONFIG_PATH")
-	if configPath != "" {
-		// Validate the path exists
-		if _, err := os.Stat(configPath); os.IsNotExist(err) {
-			fmt.Printf("Warning: INJECTIVE_STARNET_CONFIG_PATH does not exist: %s\n", configPath)
-		} else {
-			// Use the environment variable path
-			CHAIN_STRESSER_PATH = configPath
-		}
-	}
+// 	// If environment variable is not set or path doesn't exist, use default
+// 	if CHAIN_STRESSER_PATH == "" {
+// 		fmt.Println("Warning: INJECTIVE_STARNET_CONFIG_PATH is not set, using default path")
+// 		CHAIN_STRESSER_PATH = filepath.Join(execDir, "chain-stresser-deploy")
+// 	}
 
-	// If environment variable is not set or path doesn't exist, use default
-	if CHAIN_STRESSER_PATH == "" {
-		CHAIN_STRESSER_PATH = filepath.Join(execDir, "chain-stresser-deploy")
-	}
-
-	// Set up paths relative to the chain-stresser-deploy directory
-	VALIDATORS_ID_PATH = filepath.Join(CHAIN_STRESSER_PATH, "validators", ID_FILE_PATH)
-	SENTRIES_ID_PATH = filepath.Join(CHAIN_STRESSER_PATH, "sentry-nodes", ID_FILE_PATH)
-}
+// 	// Set up paths relative to the chain-stresser-deploy directory
+// 	VALIDATORS_ID_PATH = filepath.Join(CHAIN_STRESSER_PATH, "validators", ID_FILE_PATH)
+// 	SENTRIES_ID_PATH = filepath.Join(CHAIN_STRESSER_PATH, "sentry-nodes", ID_FILE_PATH)
+// }
 
 func GenerateNodesConfigs(cfg Config, nodes Nodes, nodeType string) error {
+
+	if err := checkBuildArtifacts(cfg); err != nil {
+		return fmt.Errorf("error checking build artifacts: %w", err)
+	}
+
 	if nodeType == "" || nodeType != VALIDATORS_TYPE && nodeType != SENTRIES_TYPE {
 		nodeType = DEFAULT_TYPE
 	}
@@ -227,6 +221,7 @@ func updateNodesConfigs(peers Peers, nodeSlice []Node, nodeType string) error {
 
 // Check if all artifacts are present
 func CheckArtifacts(path string, nodes Nodes) error {
+	fmt.Printf("Checking artifacts called, checking in %s\n", path)
 	// Check if if generated for validators
 	validatorsPath := path + "/validators"
 	if _, err := os.Stat(validatorsPath); os.IsNotExist(err) {
@@ -240,4 +235,20 @@ func CheckArtifacts(path string, nodes Nodes) error {
 	}
 
 	return nil
+}
+
+// SetArtifactsPath sets the path for chain-stresser artifacts
+func SetArtifactsPath(path string) {
+	if path != "" {
+		// Validate the path exists
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			fmt.Printf("Warning: Artifacts path does not exist: %s\n", path)
+			return
+		}
+		// Use the provided path
+		CHAIN_STRESSER_PATH = path
+		// Update dependent paths
+		VALIDATORS_ID_PATH = filepath.Join(CHAIN_STRESSER_PATH, "validators", ID_FILE_PATH)
+		SENTRIES_ID_PATH = filepath.Join(CHAIN_STRESSER_PATH, "sentry-nodes", ID_FILE_PATH)
+	}
 }

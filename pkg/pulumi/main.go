@@ -14,12 +14,6 @@ var Main = func(ctx *pulumi.Context) error {
 		ctx.Log.Error(fmt.Sprintf("Error loading configuration:%v", err.Error()), nil)
 		return err
 	}
-
-	if err := checkBuildArtifacts(cfg); err != nil {
-		ctx.Log.Error(fmt.Sprintf("Error checking build artifacts:%v", err.Error()), nil)
-		return err
-	}
-
 	// Create a single firewall for all nodes
 	allInstances := []*compute.Instance{}
 

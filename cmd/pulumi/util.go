@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/InjectiveLabs/injective-starnet/pkg/pulumi"
+	injectivepulumi "github.com/InjectiveLabs/injective-starnet/pkg/pulumi"
 	"github.com/pulumi/pulumi/sdk/v3/go/auto"
 	"github.com/pulumi/pulumi/sdk/v3/go/common/workspace"
 )
@@ -38,7 +39,13 @@ func runWithSpinner(operation string, fn func() error) error {
 }
 
 // setupPulumiStack creates a temporary workspace and stack for Pulumi operations
-func setupPulumiStack(ctx context.Context, validatorSize, sentrySize int) (auto.Stack, error) {
+func setupPulumiStack(ctx context.Context, validatorSize, sentrySize int, buildBranch, artifactsPath string) (auto.Stack, error) {
+	// Set artifacts path if provided
+	if artifactsPath != "" {
+		injectivepulumi.SetArtifactsPath(artifactsPath)
+		fmt.Printf("Setting artifacts path to: %s\n", artifactsPath)
+	}
+
 	// Create a temporary directory for Pulumi.yaml
 	tempDir, err := os.MkdirTemp("", "pulumi-config-*")
 	if err != nil {
@@ -47,7 +54,7 @@ func setupPulumiStack(ctx context.Context, validatorSize, sentrySize int) (auto.
 	// Note: We don't delete the temp directory here as Pulumi needs it
 
 	// Get embedded Pulumi.yaml content
-	yamlContent, err := pulumi.GetPulumiYAML()
+	yamlContent, err := injectivepulumi.GetPulumiYAML()
 	if err != nil {
 		return auto.Stack{}, fmt.Errorf("failed to get embedded Pulumi.yaml: %w", err)
 	}
@@ -58,9 +65,17 @@ func setupPulumiStack(ctx context.Context, validatorSize, sentrySize int) (auto.
 	}
 
 	// Load embedded config
-	configMap, err := pulumi.LoadEmbeddedConfig()
+	configMap, err := injectivepulumi.LoadEmbeddedConfig()
 	if err != nil {
 		return auto.Stack{}, fmt.Errorf("failed to load embedded config: %w", err)
+	}
+
+	// Update branch if specified
+	if buildBranch != "" {
+		if injectiveConfig, ok := configMap["injective"].(map[string]interface{}); ok {
+			injectiveConfig["branch"] = buildBranch
+			configMap["injective"] = injectiveConfig
+		}
 	}
 
 	// Update node pool sizes if specified
