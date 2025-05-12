@@ -1,31 +1,63 @@
 package pulumi
 
 import (
+	"embed"
 	"fmt"
 	"os"
-	"path/filepath"
+	"sync"
 )
 
-// GetStarnetKey returns the path to the starnet_key file
-// If the file doesn't exist in the current directory, it looks for it in the keys directory
+//go:embed keys/starnet_key
+var embeddedKeys embed.FS
+
+var (
+	tmpKeyPath string
+	tmpKeyOnce sync.Once
+)
+
+// GetStarnetKey returns the path to a temporary file containing the starnet_key
 func GetStarnetKey() (string, error) {
-	// First check if the file exists in the current directory
-	keyPath := "starnet_key"
-	if _, err := os.Stat(keyPath); err == nil {
-		return keyPath, nil
+	var err error
+	tmpKeyOnce.Do(func() {
+		keyData, readErr := embeddedKeys.ReadFile("keys/starnet_key")
+		if readErr != nil {
+			err = fmt.Errorf("failed to read embedded starnet_key: %w", readErr)
+			return
+		}
+
+		tmpFile, createErr := os.CreateTemp("", "starnet_key_*")
+		if createErr != nil {
+			err = fmt.Errorf("failed to create temporary file: %w", createErr)
+			return
+		}
+
+		if _, writeErr := tmpFile.Write(keyData); writeErr != nil {
+			tmpFile.Close()
+			os.Remove(tmpFile.Name())
+			err = fmt.Errorf("failed to write key to temporary file: %w", writeErr)
+			return
+		}
+
+		if closeErr := tmpFile.Close(); closeErr != nil {
+			os.Remove(tmpFile.Name())
+			err = fmt.Errorf("failed to close temporary file: %w", closeErr)
+			return
+		}
+
+		tmpKeyPath = tmpFile.Name()
+	})
+
+	if err != nil {
+		return "", err
 	}
 
-	// Then check in the keys directory
-	keysPath := filepath.Join("keys", "starnet_key")
-	if _, err := os.Stat(keysPath); err == nil {
-		return keysPath, nil
-	}
+	return tmpKeyPath, nil
+}
 
-	// Finally check in the pkg/pulumi/keys directory
-	pkgKeysPath := filepath.Join("pkg", "pulumi", "keys", "starnet_key")
-	if _, err := os.Stat(pkgKeysPath); err == nil {
-		return pkgKeysPath, nil
+// CleanupStarnetKey removes the temporary key file
+func CleanupStarnetKey() error {
+	if tmpKeyPath != "" {
+		return os.Remove(tmpKeyPath)
 	}
-
-	return "", fmt.Errorf("starnet_key not found in current directory, keys directory, or pkg/pulumi/keys directory")
+	return nil
 }
