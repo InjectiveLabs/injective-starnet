@@ -80,13 +80,15 @@ injective-starnet network up \
   [--build-branch <branch_name>]
 ```
 
-**Parameters:**
+**Required Parameters:**
 * `--validators`: Number of validator nodes to deploy
 * `--sentries`: Number of sentry nodes to deploy
-* `--artifacts-path`: (Optional) Path to chain-stresser-deploy directory (absolute path to chain-stresser-deploy folder, the output of chain-stresser generate command).
-* `--build-branch`: (Optional) Override the injective-core branch to build from
+* `--artifacts-path`: Path to chain-stresser-deploy directory (absolute path to chain-stresser-deploy folder, the output of chain-stresser generate command).
+* `--build-branch`: Override the injective-core branch to build from
 
 > **Note:** The number of validators and sentries must match the values used in the chain-stresser generate command.
+
+Optionally, you can adjust GCP parameters by editing the Pulumi config file at /pkg/pulumi/Pulumi.Starnet.yaml, though this step is **not strictly required.**
 
 #### Verify Deployment
 
