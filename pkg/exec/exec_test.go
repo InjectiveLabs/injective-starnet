@@ -136,7 +136,7 @@ func TestExecutor_ExecuteWithError(t *testing.T) {
 	}
 
 	for i, result := range results {
-		if result.Err != nil {
+		if result.Err == nil {
 			t.Errorf("Host %s: Expected error in result.Err, got error in result: %v", hosts[i], result.Err)
 		}
 		if result.ExitCode == 0 {
@@ -237,7 +237,7 @@ func getTestUsername(t *testing.T) string {
 
 // contains checks if a string contains another string
 func contains(s, substr string) bool {
-	return len(substr) == 0 || len(s) >= len(substr) && s[0:len(substr)] == substr
+	return strings.Contains(s, substr)
 }
 
 // TestMain sets up the test environment

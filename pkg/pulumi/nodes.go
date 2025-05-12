@@ -2,7 +2,6 @@ package pulumi
 
 import (
 	"fmt"
-	"sort"
 	"time"
 
 	"github.com/pulumi/pulumi-gcp/sdk/v7/go/gcp/compute"
@@ -52,14 +51,14 @@ func ProvisionNodes(ctx *pulumi.Context, cfg Config, nodeType string) ([]*comput
 	}
 
 	// Create only nodePoolSize number of instances
-	for instanceNum := range nodePoolSize {
+	for i := 0; i < nodePoolSize; i++ {
 		// Distribute across regions round-robin style
-		regionIndex := instanceNum % totalRegions
+		regionIndex := i % totalRegions
 		// Distribute across zones within the selected region
-		zoneIndex := (instanceNum / totalRegions) % zonesPerRegion
+		zoneIndex := (i / totalRegions) % zonesPerRegion
 
 		zone := fmt.Sprintf("%s-%c", regions[regionIndex], 'b'+rune(zoneIndex))
-		name := fmt.Sprintf("starnet-%s-%d", nodeType, instanceNum)
+		name := fmt.Sprintf("starnet-%s-%d", nodeType, i)
 		hostname := fmt.Sprintf("%s%s", name, ".injective.network")
 
 		vm, err := compute.NewInstance(ctx, hostname, &compute.InstanceArgs{
@@ -108,7 +107,7 @@ func ProvisionNodes(ctx *pulumi.Context, cfg Config, nodeType string) ([]*comput
 			// Label the node, so we have unique identifiers for each node
 			Labels: pulumi.StringMap{
 				"type":  pulumi.String(nodeType),
-				"index": pulumi.String(fmt.Sprintf("%d", instanceNum)),
+				"index": pulumi.String(fmt.Sprintf("%d", i)),
 			},
 			Name:     pulumi.String(name),
 			Hostname: pulumi.String(hostname),
@@ -159,27 +158,6 @@ func ProvisionNodes(ctx *pulumi.Context, cfg Config, nodeType string) ([]*comput
 
 	// Wait for all instances to be created and collect their information
 	pulumi.All(instanceInterfaces...).ApplyT(func(vms []interface{}) error {
-		// Sort instances by index (which is already in order from creation)
-		sort.Slice(vms, func(i, j int) bool {
-			vm1 := vms[i].(*compute.Instance)
-			vm2 := vms[j].(*compute.Instance)
-
-			// Get indices from labels we set during creation
-			var index1, index2 string
-
-			vm1.Labels.ApplyT(func(labels map[string]string) error {
-				index1 = labels["index"]
-				return nil
-			})
-
-			vm2.Labels.ApplyT(func(labels map[string]string) error {
-				index2 = labels["index"]
-				return nil
-			})
-
-			return index1 < index2
-		})
-
 		// Create a slice to hold all the node information promises
 		nodePromises := make([]pulumi.Output, len(vms))
 
