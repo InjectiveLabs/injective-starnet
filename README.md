@@ -76,8 +76,8 @@ Deploy the network with the following command:
 injective-starnet network up \
   --validators <num_of_validators> \
   --sentries <num_of_sentries> \
-  [--artifacts-path <absolute_path_to_chain-stresser-deploy>] \
-  [--build-branch <branch_name>]
+  --artifacts-path <absolute_path_to_chain-stresser-deploy> \
+  --build-branch <branch_name>
 ```
 
 **Required Parameters:**
@@ -125,5 +125,5 @@ All nodes expose the following ports publicly:
 * RPC: For JSON-RPC API access
 * gRPC: For gRPC API access
 
-You can use network up outputed IP's to use API's or ssh to any of nodes for debugging purpose (use key under pkg/pulumi/keys).
+You can use network up outputed IP's to use API's or ssh to any of nodes for debugging purpose.
   
