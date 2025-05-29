@@ -1,6 +1,7 @@
 package pulumi
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/InjectiveLabs/injective-starnet/pkg/exec"
@@ -82,10 +83,15 @@ func SyncNodes(ctx *pulumi.Context, cfg Config, nodes Nodes, instances []*comput
 	results := executor.Execute()
 
 	// Process the results
+	var errs []error
 	for _, result := range results {
 		if result.Err != nil {
 			fmt.Printf("Error on %s: %v\n", result.Host, result.Err)
+			errs = append(errs, result.Err)
 		}
+	}
+	if len(errs) > 0 {
+		return errors.Join(errs...)
 	}
 
 	return nil

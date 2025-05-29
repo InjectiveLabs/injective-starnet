@@ -145,7 +145,9 @@ func GenerateNodesConfigs(cfg Config, nodes Nodes, nodeType string) error {
 				ID:       nodeSlice[i].NetworkNodeID,
 			})
 		}
-		store.SetAll(records)
+		if err := store.SetAll(records); err != nil {
+			return fmt.Errorf("error setting records for %s: %v", nodeType, err)
+		}
 	} else if nodeType == SENTRIES_TYPE {
 		// For sentry nodes, get validator peers from storage
 		records, err := store.GetAll()

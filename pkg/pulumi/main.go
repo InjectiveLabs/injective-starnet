@@ -16,7 +16,9 @@ var Main = func(ctx *pulumi.Context) error {
 
 	// Spin up validators fleet
 	_, err = ProvisionNodes(ctx, cfg, VALIDATORS_TYPE)
-
+	if err != nil {
+		return err
+	}
 	// Spin up sentry nodes fleet
 	_, err = ProvisionNodes(ctx, cfg, SENTRIES_TYPE)
 	if err != nil {
