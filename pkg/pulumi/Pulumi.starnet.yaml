@@ -58,7 +58,7 @@ config:
       - # key for starnet@injective.network (so we can copy files over machines)
         username: "injectived"
         key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMO3Zw+j796R7qxDRTva8RyleQFMVQ+CfVpcI62682y1 starnet@injective.network
-      - # Maxi's key
+      - # Max's key
         username: "injectived"
         key: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINUv/6xi4IhcIsYmEcSFKqVjcMjdMtwZiq9umE4ARSWS xlab@max-mbp
   # Starnet ssh key , so we can sync files over machines (Don't change this)
