@@ -1,5 +1,11 @@
 .PHONY: test
 
+build:
+	go build -o starnet
+
+install:
+	go install
+
 test:
 	go test -v ./...
 

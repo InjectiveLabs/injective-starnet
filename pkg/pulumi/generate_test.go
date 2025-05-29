@@ -1,4 +1,4 @@
-package main
+package pulumi
 
 import (
 	"fmt"
@@ -18,13 +18,6 @@ func TestAChainStresserBinaryExists(t *testing.T) {
 
 func TestGenerateNodesConfigs(t *testing.T) {
 	cfg := Config{
-		NetworkConfig: CometConfig{
-			AccountsNum: 10,
-			Validators:  2,
-			Sentries:    2,
-			Instances:   1,
-			EVM:         false,
-		},
 		InjectiveConfig: InjectiveConfig{
 			Repository: "https://github.com/InjectiveLabs/injective-core",
 			Branch:     "master",
@@ -70,7 +63,7 @@ func TestGenerateNodesConfigs(t *testing.T) {
 	}
 }
 
-func TestZUpdateValidatorConfigs(t *testing.T) {
+func TestZUpdateNodesConfigs(t *testing.T) {
 	// Get the project root directory
 	projectRoot, err := os.Getwd()
 	if err != nil {
@@ -94,18 +87,30 @@ func TestZUpdateValidatorConfigs(t *testing.T) {
 	nodes[0] = Node{Host: "starnet-validators-0.injective.network", IP: "10.0.0.1"}
 	nodes[1] = Node{Host: "starnet-validators-1.injective.network", IP: "10.0.0.2"}
 
-	err = updateValidatorConfigs(peers, nodes, VALIDATORS_TYPE)
+	err = updateNodesConfigs(peers, nodes, VALIDATORS_TYPE)
 	if err != nil {
-		t.Fatalf("updateValidatorConfigs failed: %v", err)
+		t.Fatalf("updateNodesConfigs failed: %v", err)
 	}
 
-	// Verify the results
+	// Test for sentry nodes
+	sentryNodes := make([]Node, 2)
+	sentryNodes[0] = Node{Host: "starnet-sentry-nodes-0.injective.network", IP: "10.0.1.1"}
+	sentryNodes[1] = Node{Host: "starnet-sentry-nodes-1.injective.network", IP: "10.0.1.2"}
+
+	err = updateNodesConfigs(peers, sentryNodes, SENTRIES_TYPE)
+	if err != nil {
+		t.Fatalf("updateNodesConfigs failed for sentries: %v", err)
+	}
+
+	// Verify the results for both validators and sentries
 	expectedPeers := `node1@192.168.1.1:26656,node2@192.168.1.2:26656`
+
+	// Check validators
 	for i := 0; i < 2; i++ {
 		configPath := filepath.Join(projectRoot, CHAIN_STRESSER_PATH, fmt.Sprintf("validators/%d/config/config.toml", i))
 		content, err := os.ReadFile(configPath)
 		if err != nil {
-			t.Fatalf("Failed to read updated config file: %v", err)
+			t.Fatalf("Failed to read updated validator config file: %v", err)
 		}
 
 		// Check if the persistent_peers line was updated correctly
@@ -114,14 +119,39 @@ func TestZUpdateValidatorConfigs(t *testing.T) {
 		for _, line := range lines {
 			if strings.Contains(line, "persistent_peers") {
 				if !strings.Contains(line, expectedPeers) {
-					t.Errorf("Incorrect persistent_peers value.\nExpected to contain: %s\nGot: %s", expectedPeers, line)
+					t.Errorf("Incorrect persistent_peers value in validator config.\nExpected to contain: %s\nGot: %s", expectedPeers, line)
 				}
 				found = true
 				break
 			}
 		}
 		if !found {
-			t.Error("persistent_peers line not found in config file")
+			t.Error("persistent_peers line not found in validator config file")
+		}
+	}
+
+	// Check sentry nodes
+	for i := 0; i < 2; i++ {
+		configPath := filepath.Join(projectRoot, CHAIN_STRESSER_PATH, fmt.Sprintf("sentry-nodes/%d/config/config.toml", i))
+		content, err := os.ReadFile(configPath)
+		if err != nil {
+			t.Fatalf("Failed to read updated sentry config file: %v", err)
+		}
+
+		// Check if the persistent_peers line was updated correctly
+		lines := strings.Split(string(content), "\n")
+		found := false
+		for _, line := range lines {
+			if strings.Contains(line, "persistent_peers") {
+				if !strings.Contains(line, expectedPeers) {
+					t.Errorf("Incorrect persistent_peers value in sentry config.\nExpected to contain: %s\nGot: %s", expectedPeers, line)
+				}
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Error("persistent_peers line not found in sentry config file")
 		}
 	}
 }

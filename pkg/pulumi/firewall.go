@@ -1,4 +1,4 @@
-package main
+package pulumi
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 )
 
-// createFirewall creates a firewall rule for all node types by checking the labels
+// CreateFirewall creates a firewall rule for all node types by checking the labels
 func CreateFirewall(ctx *pulumi.Context, cfg Config, instances []*compute.Instance, nodeType string) error {
 	// Collect all unique ports from both validators and sentries
 	portsMap := make(map[string]struct{})
